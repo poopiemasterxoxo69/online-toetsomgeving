@@ -161,6 +161,7 @@
         <div class="mt-4 flex justify-between gap-3">
             <button type="button" onclick="showPreviousImportedQuestion()" class="rounded-lg border border-cyan-300 bg-white px-4 py-2 text-sm font-bold text-wrts-700 hover:bg-cyan-50">Vorige</button>
             <div class="flex gap-2">
+                <button id="edit-question-button" type="button" onclick="toggleImportedQuestionEditor()" class="rounded-lg border border-cyan-300 bg-white px-4 py-2 text-sm font-bold text-wrts-700 hover:bg-cyan-50">Bewerken</button>
                 <button type="button" onclick="deleteCurrentImportedQuestion()" class="rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-50">Verwijderen</button>
                 <button type="button" onclick="showNextImportedQuestion()" class="rounded-lg bg-wrts-600 px-4 py-2 text-sm font-bold text-white">Volgende</button>
             </div>
@@ -528,33 +529,89 @@
 
     let slideshowQuestions = [];
     let slideshowIndex = 0;
+    let editingImportedQuestion = false;
 
     function openQuestionSlideshow() {
         slideshowQuestions = [...importedMcQuestions, ...importedOpenQuestions];
         slideshowIndex = 0;
+        editingImportedQuestion = false;
         document.getElementById('slideshow-dialog').classList.remove('hidden');
         renderSlideshowQuestion();
     }
 
     function closeQuestionSlideshow() {
+        editingImportedQuestion = false;
         document.getElementById('slideshow-dialog').classList.add('hidden');
     }
 
     function showPreviousImportedQuestion() {
         if (!slideshowQuestions.length) return;
+        editingImportedQuestion = false;
         slideshowIndex = (slideshowIndex - 1 + slideshowQuestions.length) % slideshowQuestions.length;
         renderSlideshowQuestion();
     }
 
     function showNextImportedQuestion() {
         if (!slideshowQuestions.length) return;
+        editingImportedQuestion = false;
         slideshowIndex = (slideshowIndex + 1) % slideshowQuestions.length;
+        renderSlideshowQuestion();
+    }
+
+    function toggleImportedQuestionEditor() {
+        if (!slideshowQuestions.length) return;
+        editingImportedQuestion = !editingImportedQuestion;
+        renderSlideshowQuestion();
+    }
+
+    function saveEditedImportedQuestion() {
+        const question = slideshowQuestions[slideshowIndex];
+        if (!question) return;
+        const originalQuestion = JSON.parse(JSON.stringify(question));
+
+        const updatedText = document.getElementById('edit-question-text').value.trim();
+        if (!updatedText) {
+            document.getElementById('edit-question-status').textContent = 'Vul eerst de vraagtekst in.';
+            return;
+        }
+
+        if (question.options) {
+            const options = [...document.querySelectorAll('.edit-question-option')].map(input => input.value.trim());
+            const correctOption = document.querySelector('input[name="edit-correct-option"]:checked');
+            if (options.some(option => !option) || !correctOption) {
+                document.getElementById('edit-question-status').textContent = 'Vul alle antwoordopties in en selecteer het juiste antwoord.';
+                return;
+            }
+            question.text = updatedText;
+            question.options = options;
+            question.answer = Number.parseInt(correctOption.value, 10);
+        } else {
+            const title = document.getElementById('edit-question-title').value.trim();
+            const modelAnswer = document.getElementById('edit-model-answer').value.trim();
+            const maxPoints = Number.parseFloat(document.getElementById('edit-max-points').value);
+            if (!title || !modelAnswer || !Number.isFinite(maxPoints) || maxPoints <= 0) {
+                document.getElementById('edit-question-status').textContent = 'Vul titel, modelantwoord en een geldig puntenmaximum in.';
+                return;
+            }
+            question.text = updatedText;
+            question.title = title;
+            question.modelAnswer = modelAnswer;
+            question.maxPoints = maxPoints;
+        }
+
+        if (!saveImportedQuestions()) {
+            Object.assign(question, originalQuestion);
+            document.getElementById('edit-question-status').textContent = 'Opslaan in deze browser is mislukt. Controleer de beschikbare opslagruimte.';
+            return;
+        }
+        editingImportedQuestion = false;
         renderSlideshowQuestion();
     }
 
     function deleteCurrentImportedQuestion() {
         const question = slideshowQuestions[slideshowIndex];
         if (!question) return;
+        editingImportedQuestion = false;
 
         const questionList = question.options ? importedMcQuestions : importedOpenQuestions;
         const questionIndex = questionList.findIndex(item => item.id === question.id);
@@ -571,6 +628,7 @@
         const content = document.getElementById('slideshow-content');
         const counter = document.getElementById('slideshow-counter');
         if (!slideshowQuestions.length) {
+            document.getElementById('edit-question-button').classList.add('hidden');
             counter.textContent = '0 / 0';
             content.innerHTML = '<p class="text-sm text-slate-500">Je hebt nog geen vragen geïmporteerd.</p>';
             return;
@@ -578,6 +636,41 @@
 
         const question = slideshowQuestions[slideshowIndex];
         counter.textContent = `${slideshowIndex + 1} / ${slideshowQuestions.length}`;
+        const editButton = document.getElementById('edit-question-button');
+        editButton.classList.toggle('hidden', !question.imported);
+        editButton.textContent = editingImportedQuestion ? 'Annuleren' : 'Bewerken';
+        if (editingImportedQuestion && question.imported) {
+            const commonFields = `
+                <label class="block text-xs font-semibold text-slate-600">Vraagtekst
+                    <textarea id="edit-question-text" rows="3" class="mt-1 w-full rounded-lg border border-cyan-200 p-2 text-sm">${escapeHtml(question.text)}</textarea>
+                </label>`;
+            if (question.options) {
+                content.innerHTML = `
+                    <div class="space-y-3">${commonFields}
+                    <fieldset class="space-y-2"><legend class="text-xs font-semibold text-slate-600">Antwoordopties (selecteer het juiste antwoord)</legend>
+                    ${question.options.map((option, index) => `
+                        <label class="flex items-center gap-2 text-sm text-slate-700">
+                            <input type="radio" name="edit-correct-option" value="${index}" ${index === question.answer ? 'checked' : ''}>
+                            <input class="edit-question-option min-w-0 flex-1 rounded-lg border border-cyan-200 p-2" aria-label="Antwoordoptie ${index + 1}" value="${escapeHtml(option)}">
+                        </label>`).join('')}
+                    </fieldset><p id="edit-question-status" class="text-xs text-rose-700" aria-live="polite"></p>
+                    <button type="button" onclick="saveEditedImportedQuestion()" class="rounded-lg bg-wrts-600 px-4 py-2 text-sm font-bold text-white">Wijzigingen opslaan</button></div>`;
+            } else {
+                content.innerHTML = `
+                    <div class="space-y-3">${commonFields}
+                    <label class="block text-xs font-semibold text-slate-600">Titel
+                        <input id="edit-question-title" class="mt-1 w-full rounded-lg border border-cyan-200 p-2 text-sm" value="${escapeHtml(question.title)}">
+                    </label>
+                    <label class="block text-xs font-semibold text-slate-600">Modelantwoord
+                        <textarea id="edit-model-answer" rows="4" class="mt-1 w-full rounded-lg border border-cyan-200 p-2 text-sm">${escapeHtml(stripHtml(question.modelAnswer))}</textarea>
+                    </label>
+                    <label class="block text-xs font-semibold text-slate-600">Maximaal aantal punten
+                        <input id="edit-max-points" type="number" min="0.5" step="0.5" class="mt-1 w-28 rounded-lg border border-cyan-200 p-2 text-sm" value="${question.maxPoints}">
+                    </label><p id="edit-question-status" class="text-xs text-rose-700" aria-live="polite"></p>
+                    <button type="button" onclick="saveEditedImportedQuestion()" class="rounded-lg bg-wrts-600 px-4 py-2 text-sm font-bold text-white">Wijzigingen opslaan</button></div>`;
+            }
+            return;
+        }
         if (question.options) {
             content.innerHTML = `
                 <p class="text-xs font-bold uppercase tracking-wider text-wrts-600">Hoofdstuk ${escapeHtml(question.chapter || 'Onbekend')}</p>
