@@ -1,0 +1,901 @@
+<!doctype html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>B.R.O. | Online tentamen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { wrts: { 50: '#e9fbff', 100: '#c9f3fa', 300: '#65d7e7', 500: '#12abc2', 600: '#078da9', 700: '#08718b' } }
+                }
+            }
+        };
+    </script>
+    <style>
+        :root {
+            --aqua: #087f99;
+            --aqua-dark: #07576d;
+            --sky: #e9fbff;
+            --ink: #123548;
+            --line: rgba(25, 117, 139, .2);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            color: var(--ink);
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #d9f8ff 0%, #f7ffff 46%, #d8f3ed 100%);
+            background-attachment: fixed;
+        }
+        body::before, body::after {
+            position: fixed;
+            z-index: -1;
+            border-radius: 50%;
+            content: "";
+            pointer-events: none;
+            filter: blur(1px);
+        }
+        body::before { width: 260px; height: 260px; top: 8%; left: -90px; background: rgba(255,255,255,.62); box-shadow: 80px 24px 0 -48px rgba(255,255,255,.8); }
+        body::after { width: 340px; height: 340px; right: -140px; bottom: 5%; background: rgba(144, 226, 214, .28); }
+        header {
+            background: linear-gradient(180deg, rgba(255,255,255,.97), rgba(232,251,255,.94)) !important;
+            border-bottom: 1px solid var(--line) !important;
+            box-shadow: 0 4px 18px rgba(37, 124, 143, .14) !important;
+        }
+        header > div:first-child { max-width: 1040px; }
+        header .bg-wrts-600 {
+            border: 2px solid rgba(255,255,255,.82);
+            border-radius: 12px;
+            background: linear-gradient(145deg, #19c2d1, #087996) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.65), 0 3px 8px rgba(7,113,139,.28);
+        }
+        main { max-width: 920px !important; }
+        #welcome-screen, #results-screen, #exam-form > div > div, #mc-questions-container > div, #open-questions-container > div {
+            border: 1px solid var(--line) !important;
+            box-shadow: 0 10px 25px rgba(26, 111, 131, .1), inset 0 1px 0 rgba(255,255,255,.92) !important;
+        }
+        #welcome-screen, #results-screen { background: rgba(255,255,255,.84) !important; backdrop-filter: blur(10px); }
+        #welcome-screen { position: relative; overflow: hidden; }
+        #welcome-screen::before { position: absolute; width: 130px; height: 130px; top: -62px; right: -34px; border: 2px solid rgba(18,171,194,.18); border-radius: 50%; content: ""; box-shadow: -26px 28px 0 -12px rgba(18,171,194,.1); }
+        #welcome-screen .inline-block { background: linear-gradient(145deg, #e1fbff, #b8edf4) !important; box-shadow: inset 0 2px 5px rgba(255,255,255,.9), 0 5px 10px rgba(18,171,194,.16); }
+        #welcome-screen h2, #results-screen h2 { color: var(--aqua-dark) !important; letter-spacing: .01em; }
+        button { letter-spacing: .01em; }
+        button.bg-wrts-600 { background: linear-gradient(180deg, #19b9ca, #078aa6) !important; box-shadow: 0 4px 0 #056b81, 0 8px 15px rgba(7,113,139,.2) !important; }
+        button.bg-wrts-600:hover { background: linear-gradient(180deg, #2bc8d6, #078aa6) !important; transform: translateY(-1px); }
+        button.bg-emerald-600 { background: linear-gradient(180deg, #21bf94, #07936d) !important; box-shadow: 0 4px 0 #067456, 0 8px 15px rgba(6,116,86,.2) !important; }
+        #mc-questions-container > div, #open-questions-container > div { background: rgba(255,255,255,.89) !important; }
+        #mc-questions-container label { background: rgba(236,252,255,.58); border-color: rgba(18,171,194,.2); }
+        #mc-questions-container label:hover { background: #e4faff; border-color: #52cdda; }
+        textarea, input[type="number"] { background: rgba(245,253,255,.8) !important; border-color: rgba(18,145,165,.25) !important; }
+        .answer-textarea { min-height: 106px; max-height: 520px; overflow-y: auto; resize: vertical; }
+        .slideshow-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: min(640px, calc(100vh - 6rem)); }
+        #slideshow-content { min-height: 0; overflow-y: auto; }
+        footer { background: rgba(255,255,255,.7) !important; border-color: var(--line) !important; color: #427487 !important; }
+        #import-button { display: inline-flex !important; align-items: center; visibility: visible !important; }
+        body.dark-mode { color: #d8f3f5; background: linear-gradient(135deg, #102b38 0%, #173d49 52%, #153b36 100%); }
+        body.dark-mode header { background: linear-gradient(180deg, rgba(18, 50, 63, .98), rgba(17, 57, 69, .96)) !important; border-color: rgba(115, 220, 221, .25) !important; }
+        body.dark-mode #welcome-screen, body.dark-mode #results-screen, body.dark-mode #exam-form > div > div, body.dark-mode #mc-questions-container > div, body.dark-mode #open-questions-container > div { background: rgba(20, 53, 65, .94) !important; border-color: rgba(115, 220, 221, .24) !important; color: #d8f3f5; }
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode p, body.dark-mode span, body.dark-mode label, body.dark-mode strong { color: inherit; }
+        body.dark-mode .text-slate-900, body.dark-mode .text-slate-800, body.dark-mode .text-slate-700 { color: #e4fbfb !important; }
+        body.dark-mode .text-slate-600, body.dark-mode .text-slate-500, body.dark-mode .text-slate-400 { color: #a9d0d5 !important; }
+        body.dark-mode #mc-questions-container label, body.dark-mode textarea, body.dark-mode input[type="number"] { background: rgba(10, 39, 49, .72) !important; border-color: rgba(115, 220, 221, .3) !important; color: #e4fbfb; }
+        body.dark-mode footer { background: rgba(12, 39, 49, .82) !important; color: #a9d0d5 !important; }
+        body.dark-mode .bg-white { background-color: #143541 !important; color: #e4fbfb; }
+        @media (max-width: 640px) { header h1 { font-size: .9rem; } header p { font-size: .65rem; } main { padding: .8rem !important; } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- B.R.O. Online Tentamen Header -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-xs">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="bg-wrts-600 text-white font-black px-3 py-1.5 rounded-lg text-lg tracking-wider">B.R.O.</div>
+            <div>
+                <h1 class="font-bold text-slate-900 leading-tight">Openbaar Bestuur & Beleid</h1>
+                <p class="text-xs text-slate-500">Digitale tentamenomgeving</p>
+            </div>
+        </div>
+        <div id="header-progress" class="hidden text-sm font-semibold bg-wrts-50 text-wrts-700 px-3 py-1.5 rounded-full border border-wrts-100">
+            Voortgang: <span id="progress-text">0 / 24</span>
+        </div>
+        <div id="exam-timer" class="hidden rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800" aria-live="polite">
+            Tijd: <span id="timer-text">90:00</span>
+        </div>
+        <button type="button" onclick="openQuestionSlideshow()" class="ml-auto mr-2 rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-wrts-700 shadow-sm hover:bg-cyan-50" aria-label="Geïmporteerde vragen bekijken">
+            Mijn vragen
+        </button>
+        <button id="import-button" type="button" onclick="toggleImportDialog()" class="ml-auto mr-3 rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-wrts-700 shadow-sm hover:bg-cyan-50" aria-label="Vragen beheren">
+            Vragen beheren
+        </button>
+        <button id="theme-toggle" type="button" onclick="toggleDarkMode()" class="rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-wrts-700 shadow-sm hover:bg-cyan-50" aria-label="Donkere modus inschakelen">
+            Donker
+        </button>
+    </div>
+    <!-- Voortgangsbalk onder navbar -->
+    <div id="progress-bar-container" class="w-full bg-slate-200 h-1.5 hidden">
+        <div id="progress-bar" class="bg-wrts-600 h-1.5 transition-all duration-300" style="width: 0%"></div>
+    </div>
+</header>
+
+<div id="import-dialog" class="hidden fixed inset-0 z-[60] bg-slate-900/35 p-4" role="dialog" aria-modal="true" aria-labelledby="import-title">
+    <div class="mx-auto mt-16 max-w-2xl rounded-2xl border border-cyan-200 bg-white p-5 shadow-2xl">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 id="import-title" class="text-lg font-bold text-slate-800">Vragen importeren</h2>
+                <p class="mt-1 text-xs text-slate-500">Plak je tekst hieronder. Een sterretje markeert het juiste meerkeuzeantwoord.</p>
+            </div>
+            <button type="button" onclick="toggleImportDialog()" class="text-xl leading-none text-slate-400 hover:text-slate-700" aria-label="Importvenster sluiten">&times;</button>
+        </div>
+        <textarea id="question-text" rows="12" class="mt-4 w-full rounded-xl border border-cyan-200 bg-cyan-50/40 p-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-cyan-400" placeholder="&quot;Welke kleur is een wortel? (a. blauw) (b. groen) (c. paars) (d. oranje*)&quot;\n\n[Leg het lichtspectrum uit]\n{Het lichtspectrum zegt ...}"></textarea>
+        <div class="mt-3 flex flex-wrap items-end gap-3">
+            <label class="text-xs font-semibold text-slate-600">Meerkeuzevragen uit import
+                <input id="import-mc-count" type="number" min="0" value="20" class="mt-1 block w-20 rounded-lg border border-cyan-200 p-2 text-center text-sm">
+            </label>
+            <label class="text-xs font-semibold text-slate-600">Open vragen uit import
+                <input id="import-open-count" type="number" min="0" value="4" class="mt-1 block w-20 rounded-lg border border-cyan-200 p-2 text-center text-sm">
+            </label>
+            <button type="button" onclick="importQuestionText()" class="ml-auto rounded-lg bg-wrts-600 px-4 py-2 text-sm font-bold text-white shadow-sm">Vragen toevoegen</button>
+        </div>
+        <p id="import-status" class="mt-3 text-xs text-slate-500" aria-live="polite">Importeer vragen voordat je een toets start. Alleen geïmporteerde vragen worden gebruikt.</p>
+    </div>
+</div>
+
+<div id="slideshow-dialog" class="hidden fixed inset-0 z-[60] bg-slate-900/35 p-4" role="dialog" aria-modal="true" aria-labelledby="slideshow-title">
+    <div class="slideshow-panel mx-auto mt-16 max-w-2xl rounded-2xl border border-cyan-200 bg-white p-5 shadow-2xl">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 id="slideshow-title" class="text-lg font-bold text-slate-800">Geïmporteerde vragen</h2>
+                <p id="slideshow-counter" class="mt-1 text-xs text-slate-500">0 / 0</p>
+            </div>
+            <button type="button" onclick="closeQuestionSlideshow()" class="text-xl leading-none text-slate-400 hover:text-slate-700" aria-label="Slideshow sluiten">&times;</button>
+        </div>
+        <div id="slideshow-content" class="mt-5 min-h-48 rounded-xl border border-cyan-100 bg-cyan-50/40 p-5"></div>
+        <div class="mt-4 flex justify-between gap-3">
+            <button type="button" onclick="showPreviousImportedQuestion()" class="rounded-lg border border-cyan-300 bg-white px-4 py-2 text-sm font-bold text-wrts-700 hover:bg-cyan-50">Vorige</button>
+            <div class="flex gap-2">
+                <button type="button" onclick="deleteCurrentImportedQuestion()" class="rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-50">Verwijderen</button>
+                <button type="button" onclick="showNextImportedQuestion()" class="rounded-lg bg-wrts-600 px-4 py-2 text-sm font-bold text-white">Volgende</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<main class="max-w-3xl mx-auto w-full p-4 md:p-6 my-6 flex-grow">
+
+    <!-- Welkomstscherm (WRTS Oefenmodus Stijl) -->
+    <div id="welcome-screen" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center space-y-6">
+        <div class="inline-block bg-wrts-50 text-wrts-600 p-4 rounded-full mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+        </div>
+        <p class="text-xs uppercase tracking-widest font-bold text-wrts-600">Online midterm test</p>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900">Openbaar Bestuur & Beleid</h2>
+        <p class="text-slate-600 max-w-lg mx-auto text-sm md:text-base leading-relaxed">
+            Stel zelf een oefentoets samen uit je geïmporteerde vragen. Je ontvangt na inlevering een cijferberekening op basis van je antwoorden.
+        </p>
+        <div class="grid grid-cols-3 gap-2 max-w-lg mx-auto text-left">
+            <div class="rounded-lg bg-cyan-50 border border-cyan-100 px-3 py-2"><span class="block text-xs text-slate-500">Vragen</span><strong id="total-question-count" class="text-slate-800">0 beschikbaar</strong></div>
+            <div class="rounded-lg bg-cyan-50 border border-cyan-100 px-3 py-2"><span class="block text-xs text-slate-500">Punten</span><strong class="text-slate-800">100 totaal</strong></div>
+            <div class="rounded-lg bg-cyan-50 border border-cyan-100 px-3 py-2"><span class="block text-xs text-slate-500">Modus</span><strong class="text-slate-800">Oefentoets</strong></div>
+        </div>
+        <div class="mx-auto grid max-w-lg grid-cols-2 gap-3 rounded-xl border border-cyan-200 bg-cyan-50/70 p-4 text-left">
+            <label class="text-xs font-semibold text-slate-600">Tijd (minuten)
+                <input id="exam-duration" type="number" min="1" max="300" value="90" onchange="updateExamSettings()" class="mt-1 block w-full rounded-lg border border-cyan-200 p-2 text-sm">
+            </label>
+            <label class="text-xs font-semibold text-slate-600">Meerkeuzevragen
+                <input id="exam-mc-count" type="number" min="0" max="100" value="0" onchange="updateExamSettings()" class="mt-1 block w-full rounded-lg border border-cyan-200 p-2 text-sm">
+            </label>
+            <label class="text-xs font-semibold text-slate-600">Open vragen
+                <input id="exam-open-count" type="number" min="0" max="100" value="0" onchange="updateExamSettings()" class="mt-1 block w-full rounded-lg border border-cyan-200 p-2 text-sm">
+            </label>
+            <p id="question-settings-summary" class="col-span-2 text-xs text-slate-500">Importeer eerst vragen om een toets samen te stellen.</p>
+        </div>
+        <div class="pt-4">
+            <button onclick="startExam()" class="bg-wrts-600 hover:bg-wrts-700 text-white font-bold py-3.5 px-8 rounded-xl shadow-md transition duration-200 text-base">
+                Start Oefentoets
+            </button>
+        </div>
+    </div>
+
+    <!-- Tentamen Formulier -->
+    <form id="exam-form" class="hidden space-y-6" onsubmit="event.preventDefault(); submitExam();">
+        
+        <!-- Deel I: Meerkeuzevragen -->
+        <div class="space-y-4">
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200 p-4 mb-4 flex justify-between items-center">
+                <span class="font-bold text-slate-800 text-lg">Deel I: Gesloten Vragen</span>
+                <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-medium">3 punten per vraag</span>
+            </div>
+            <div id="mc-questions-container" class="space-y-4">
+                <!-- Wordt dynamisch geladen -->
+            </div>
+        </div>
+
+        <!-- Deel II: Open Vragen -->
+        <div class="space-y-4 pt-6">
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200 p-4 mb-4 flex justify-between items-center">
+                <span class="font-bold text-slate-800 text-lg">Deel II: Open Vragen</span>
+                <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-medium">Zelf nakijken & punten toekennen</span>
+            </div>
+            <div id="open-questions-container" class="space-y-6">
+                <!-- Wordt dynamisch geladen -->
+            </div>
+        </div>
+
+        <!-- Inleveren Knop -->
+        <div class="pt-6 text-center">
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-10 rounded-xl shadow-md transition duration-200 text-lg w-full md:w-auto">
+                Inleveren & Cijfer Berekenen
+            </button>
+        </div>
+    </form>
+
+    <!-- Resultaten Scherm -->
+    <div id="results-screen" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center space-y-6">
+        <div class="inline-block bg-emerald-50 text-emerald-600 p-4 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900">Tentamen Afgerond!</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-lg mx-auto my-4">
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <p class="text-xs text-slate-500 font-medium">Meerkeuze Score</p>
+                <p id="res-mc-score" class="text-xl font-bold text-slate-900 mt-1">0 / 60</p>
+            </div>
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <p class="text-xs text-slate-500 font-medium">Open Vragen Score</p>
+                <p id="res-open-score" class="text-xl font-bold text-slate-900 mt-1">0 / 40</p>
+            </div>
+            <div class="bg-wrts-50 p-4 rounded-xl border border-wrts-100">
+                <p class="text-xs text-wrts-600 font-medium">Totaal Score</p>
+                <p id="res-total-score" class="text-xl font-bold text-wrts-700 mt-1">0 / 100</p>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 text-white p-6 rounded-2xl max-w-xs mx-auto shadow-inner">
+            <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Jouw definitieve cijfer</p>
+            <p id="res-final-grade" class="text-5xl font-black text-emerald-400 mt-2">1.0</p>
+            <p id="res-status" class="text-xs mt-2 text-slate-300 font-medium">Onvoldoende</p>
+        </div>
+        <p id="timer-result" class="hidden text-sm font-semibold text-rose-700">De tijd was verstreken; je toets is automatisch ingeleverd.</p>
+
+        <section class="mt-8 text-left">
+            <h3 class="text-lg font-bold text-slate-800">Jouw nakijkoverzicht</h3>
+            <p class="mt-1 text-sm text-slate-500">Bekijk per vraag wat je hebt ingevuld en wat het juiste of verwachte antwoord was.</p>
+            <div id="review-content" class="mt-4 space-y-3"></div>
+        </section>
+
+        <section class="mt-8 rounded-xl border border-cyan-200 bg-cyan-50/70 p-5 text-left">
+            <h3 class="text-lg font-bold text-slate-800">Hoofdstukanalyse</h3>
+            <p id="chapter-analysis" class="mt-1 text-sm text-slate-600"></p>
+            <div id="chapter-breakdown" class="mt-4 space-y-2"></div>
+        </section>
+
+        <div class="pt-4">
+            <button onclick="location.reload()" class="bg-wrts-600 hover:bg-wrts-700 text-white font-semibold py-3 px-6 rounded-xl transition duration-200 text-sm">
+                Opnieuw Oefenen
+            </button>
+        </div>
+    </div>
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+    B.R.O. Online Tentamen • Openbaar Bestuur & Beleid
+</footer>
+
+<!-- JavaScript Logica -->
+<script>
+    const mcQuestions = [
+        { id: 1, text: "Welke organisaties vallen volgens de ruime opvatting van het openbaar bestuur wél onder het openbaar bestuur, maar worden in de beperkte opvatting uitgesloten?", options: ["Alleen de ministeries en de Tweede Kamer.", "Organisaties die een publieke taak in het maatschappelijk belang vervullen, zoals privaat gevormde ondernemingen met overheidstoezicht of subsidies (bijv. ProRail).", "Uitsluitend de gemeenten, provincies en waterschappen.", "Commerciële marktpartijen die uitsluitend winst nastreven zonder enige staatsbemoeienis."], answer: 1 },
+        { id: 2, text: "Wat verstaan we in de bestuurskunde onder een gedecentraliseerde eenheidsstaat?", options: ["Een staatsvorm waarin alle macht volledig gecentraliseerd is bij de lokale gemeentebesturen.", "Een staatsvorm waarin de landelijke overheid (Rijksoverheid) het primaat heeft, maar taken en bevoegdheden zijn overgedragen aan zelfstandige regionale en lokale bestuurslagen.", "Een federatie waarin provincies volledige soevereiniteit bezitten ten opzichte van Den Haag.", "Een staatsvorm zonder landelijke wetgeving waarin elke regio zelf wetten vaststelt."], answer: 1 },
+        { id: 3, text: "Op welke agenda belanden onderwerpen pas wanneer de overheid daadwerkelijk concrete maatregelen en beleidsvoorstellen begint voor te bereiden?", options: ["De publieksagenda (of systeemagenda)", "De politieke agenda (of institutionele agenda)", "De beleidsagenda", "De media-agenda"], answer: 2 },
+        { id: 4, text: "Hoe noemen we het geheel van alle feitelijke effecten en maatschappelijke gevolgen (zowel beoogde als onbedoelde, zoals verhoogde stress of administratieve lasten) die optreden na invoering van beleid?", options: ["Beleidsevaluatie", "Beleidsdoorwerking", "Beleidsmonitoring", "Doelmatigheidsanalyse"], answer: 1 },
+        { id: 5, text: "Soms worden taken die eerder door de markt of particulieren werden gedaan, door de overheid teruggebracht onder overheidsbeheer en eigendom. Hoe noemen we dit proces?", options: ["Privatisering", "Deregulering", "Nationalisering (of collectivisering)", "Vermaatschappelijking"], answer: 2 },
+        { id: 6, text: "Welke term gebruiken we voor een politieke cultuur waarin spanningen tussen bevolkingsgroepen worden verminderd doordat elites onderling compromissen sluiten en minderheidsbelangen respecteren?", options: ["Polarisatie", "Pacificatiepolitiek", "Technocratie", "Populisme"], answer: 1 },
+        { id: 7, text: "Tijdens de uitvoering van beleid worden de inzet van middelen, activiteiten en prestaties doorlopend bijgehouden om te controleren of alles volgens planning verloopt. Met welke term omschrijven we dit?", options: ["Ex ante beleidsevaluatie", "Beleidsmonitoring", "Summatieve evaluatie", "Beleidsbepaling"], answer: 1 },
+        { id: 8, text: "Wanneer journalisten, politici en onderzoekers steeds meer uiteenlopende bestuurlijke fouten of ethische kwesties gaan benoemen als formele 'integriteitsschendingen', spreken we over:", options: ["Integritisme", "Blame avoidance", "Framing", "Functionele politisering"], answer: 0 },
+        { id: 9, text: "Stelling 1: Leiderschap is het proces om mensen te beïnvloeden om iets te denken of te doen wat ze anders niet of minder hadden gedaan. Stelling 2: Mensen die formeel zijn aangesteld als leidinggevende laten automatisch altijd effectief leiderschap zien. Welke stelling(en) is/zijn juist?", options: ["Beide stellingen zijn juist.", "Stelling 1 is juist, stelling 2 is onjuist.", "Stelling 2 is juist, stelling 1 is onjuist.", "Beide stellingen zijn onjuist."], answer: 1 },
+        { id: 10, text: "Stelling 1: Volgens de contingentietheorie hangt de meest passende organisatievorm af van de taak en de omgeving. Stelling 2: Mimetisch isomorfisme beschrijft dat organisaties in onzekere omgevingen succesvolle collega-organisaties imiteren. Juist of onjuist?", options: ["Beide stellingen zijn juist.", "Stelling 1 is juist, stelling 2 is onjuist.", "Stelling 2 is juist, stelling 1 is onjuist.", "Beide stellingen zijn onjuist."], answer: 0 },
+        { id: 11, text: "Stelling 1: Een projectmatige organisatie heeft een tijdelijk en in tijd begrensd karakter. Stelling 2: Een projectmatige organisatie heeft een rigide, permanente hiërarchische structuur. Juist of onjuist?", options: ["Beide stellingen zijn juist.", "Stelling 1 is juist, stelling 2 is onjuist.", "Stelling 2 is juist, stelling 1 is onjuist.", "Beide stellingen zijn onjuist."], answer: 1 },
+        { id: 12, text: "Stelling 1: De Human Relations-benadering legt sterke nadruk op sociale behoeften, motivatie en welzijn van medewerkers. Stelling 2: Deze benadering is een voorloper van modern HRM. Juist of onjuist?", options: ["Beide stellingen zijn juist.", "Stelling 1 is juist, stelling 2 is onjuist.", "Stelling 2 is juist, stelling 1 is onjuist.", "Beide stellingen zijn onjuist."], answer: 0 },
+        { id: 13, text: "Stelling 1: Beide benaderingen (ontwerp en ontwikkeling) richten zich op organisatieverandering. Stelling 2: De ontwikkelbenadering is een strikt top-down gestuurde ontwerpbenadering. Juist of onjuist?", options: ["Beide stellingen zijn juist.", "Stelling 1 is juist, stelling 2 is onjuist.", "Stelling 2 is juist, stelling 1 is onjuist.", "Beide stellingen zijn onjuist."], answer: 1 },
+        { id: 14, text: "Stelling 1: Commissarissen van de Koning en burgemeesters zijn benoemde bestuurlijke gezagsdragers. Stelling 2: Ministers en staatssecretarissen behoren tot het ambtelijk echelon. Juist of onjuist?", options: ["Beide stellingen zijn juist.", "Stelling 1 is juist, stelling 2 is onjuist.", "Stelling 2 is juist, stelling 1 is onjuist.", "Beide stellingen zijn onjuist."], answer: 1 },
+        { id: 15, text: "Stelling 1: De minister draagt de politieke eindverantwoordelijkheid voor alle handelingen en nalatigheden van ondergeschikte ambtenaren. Stelling 2: Het parlement kan individuele ambtenaren rechtstreeks ter verantwoording roepen. Juist of onjuist?", options: ["Beide stellingen zijn juist.", "Stelling 1 is juist, stelling 2 is onjuist.", "Stelling 2 is juist, stelling 1 is onjuist.", "Beide stellingen zijn onjuist."], answer: 1 },
+        { id: 16, text: "Stroom geleverd via het openbare elektriciteitsnetwerk waarbij intensief gebruik door de één invloed kan hebben op de capaciteit voor een ander, valt in welke goederencategorie?", options: ["Privaat goed", "Club-goed", "Common-pool goed (gemeenschappelijke bron)", "Publiek goed"], answer: 2 },
+        { id: 17, text: "Het instellen van dynamische tarieven en subsidiëring van slimme laadpalen door de overheid is de inzet van welk type beleidsinstrument?", options: ["Communicatief beleidsinstrument", "Economisch (financieel) beleidsinstrument", "Juridisch beleidsinstrument", "Fysiek dwanginstrument"], answer: 1 },
+        { id: 18, text: "Wat is een kenmerk van een ZBO (Zelfstandig Bestuursorgaan) op afstand van de minister?", options: ["Valt rechtstreeks hiërarchisch onder dagelijkse aansturing van een minister.", "Valt onder het ambtelijk apparaat.", "Voert overheidstaken uit, maar valt niet rechtstreeks onder de hiërarchische dagelijkse aansturing van een politieke gezagsdrager.", "Heeft als enige orgaan de bevoegdheid wetten goed te keuren."], answer: 2 },
+        { id: 19, text: "Onderzoek naar de te verwachte effecten van slimme laadregulering vóórdat dit landelijk wordt ingevoerd, is welk type evaluatie?", options: ["Ex ante beleidsevaluatie", "Ex post beleidsevaluatie", "Summatieve beleidsevaluatie", "Formatieve eindevaluatie"], answer: 0 },
+        { id: 20, text: "De negatieve gevolgen van CO₂-uitstoot en netcongestie die niet automatisch door marktpartijen in de stroomprijs worden verrekend, noemen we:", options: ["Interne bedrijfsvoordelen", "Externe effecten (marktimperfecties)", "Publieke clubvoordelen", "Monopolievorming"], answer: 1 }
+    ];
+
+    const openQuestions = [
+        {
+            id: 21,
+            title: "Vraag 21: Agendavorming & Stromenmodel (15 punten)",
+            text: "(a) Wat zijn de drie hoofdstromen in het stromenmodel van John Kingdon? Noem en omschrijf elk kort. (6 punten)<br>(b) Wat wordt in het barrièremodel verstaan onder een 'non-decision' (niet-besluit) en bij welke barrière treedt dit doorgaans op? (4 punten)<br>(c) Wat is het fundamentele verschil tussen 'zichtbare participanten' en 'verborgen participanten'? Geef van beide een voorbeeld. (5 punten)",
+            maxPoints: 15,
+            modelAnswer: `<strong>a.</strong> Problemenstroom (herkenning knelpunten/verschil norm-toestand, 2 pnt), Oplossingenstroom (oersoep van ideeën van experts/ambtenaren, 2 pnt), Politieke stroom (stemmingen/verkiezingen/crisissen, 2 pnt).<br><strong>b.</strong> Een non-decision is de situatie waarin de overheid voorkomt dat een maatschappelijk eis een formeel politiek strijdpunt wordt (2 pnt). Dit treedt op bij barrière 1 of 2 (2 pnt).<br><strong>c.</strong> Zichtbare participanten (ministers, politici) bepalen de politieke agenda. Verborgen participanten (ambtenaren, wetenschappers) werken in de luwte aan alternatieven op de beleidsagenda (5 pnt totaal).`
+        },
+        {
+            id: 22,
+            title: "Vraag 22: Uitvoering, Instrumenten en Bressers (9 punten)",
+            text: "(a) Welke drie sturingsmodellen onderscheidt Bressers bij de keuze van beleidsinstrumenten? (3 punten)<br>(b) Aan de hand van welke drie criteria wordt de geschiktheid van beleidsinstrumenten doorgaans beoordeeld? Noem en licht deze toe. (6 punten)",
+            maxPoints: 9,
+            modelAnswer: `<strong>a.</strong> 1. Juridisch model, 2. Economisch model, 3. Communicatief model (3 pnt).<br><strong>b.</strong> 1. Effectiviteit/doeltreffendheid (bereikt het het doel?, 2 pnt), 2. Uitvoerbaarheid (middelen en capaciteit, 2 pnt), 3. Haalbaarheid/politieke acceptatie (draagvlak, 2 pnt).`
+        },
+        {
+            id: 23,
+            title: "Vraag 23: Multilevel Governance & Uitholling Natiestaat (6 punten)",
+            text: "(a) Wat bedoelt Rod Rhodes precies met de 'uitholling van de natiestaat'? (3 punten)<br>(b) Hoe is dit fenomeen zichtbaar in de verhoudingen tussen de verschillende bestuurslagen? (3 punten)",
+            maxPoints: 6,
+            modelAnswer: `<strong>a.</strong> De nationale bestuurslaag wordt een lege huls doordat strategisch beleid opschuift naar supranationale organen (EU) en maatwerk naar lokale/subnationale verbanden (3 pnt).<br><strong>b.</strong> Zichtbaar doordat wetgeving op Europees niveau wordt gemaakt die voor NL geldt, terwijl gemeenten zelfstandig lokaal beleid voeren (3 pnt).`
+        },
+        {
+            id: 24,
+            title: "Vraag 24: Kwaliteit van Bestuur (10 punten)",
+            text: "In de casus (straatverlichting uitschakelen voor kostenbesparing, maar stijging inbraken/ongevallen) is er sprake van spanning tussen twee kernwaarden van bestuurlijke kwaliteit. Welke twee zijn dat? Leg uit en geef definities. (10 punten)",
+            maxPoints: 10,
+            modelAnswer: `<strong>Antwoord:</strong> Spanning tussen Doelmatigheid/Efficiëntie en Doeltreffendheid/Veiligheid.<br>- Benoemen van de twee kwaliteiten (2 pnt).<br>- Correcte definitie van doelmatigheid (prestaties behalen tegen zo laag mogelijke kosten) (2 pnt).<br>- Correcte definitie van doeltreffendheid / veiligheid als publieke waarde (bereiken beoogd maatschappelijk doel) (2 pnt).<br>- Uitleg van de spanning: kostenbesparing is doelmatig, maar ondermijnt de veiligheid/leefbaarheid (4 pnt).`
+        }
+    ];
+
+    const importedMcQuestions = [];
+    const importedOpenQuestions = [];
+    let questionIdCounter = 25;
+    let activeMcQuestions = [...mcQuestions];
+    let activeOpenQuestions = [...openQuestions];
+    let timerInterval = null;
+    let remainingSeconds = 90 * 60;
+    let examSubmitted = false;
+    let examSettings = { duration: 90, mcCount: 0, openCount: 0 };
+
+    function updateExamSettings() {
+        examSettings = {
+            duration: Math.min(300, Math.max(1, Number.parseInt(document.getElementById('exam-duration').value, 10) || 90)),
+            mcCount: Math.min(importedMcQuestions.length, Math.max(0, Number.parseInt(document.getElementById('exam-mc-count').value, 10) || 0)),
+            openCount: Math.min(importedOpenQuestions.length, Math.max(0, Number.parseInt(document.getElementById('exam-open-count').value, 10) || 0))
+        };
+        document.getElementById('exam-duration').value = examSettings.duration;
+        document.getElementById('exam-mc-count').value = examSettings.mcCount;
+        document.getElementById('exam-open-count').value = examSettings.openCount;
+        document.getElementById('total-question-count').textContent = `${importedMcQuestions.length + importedOpenQuestions.length} beschikbaar`;
+        document.getElementById('question-settings-summary').textContent = `${examSettings.mcCount} meerkeuzevragen, ${examSettings.openCount} open vragen, ${examSettings.duration} minuten. Alleen geïmporteerde vragen.`;
+    }
+
+    function selectQuestions(standardQuestions, importedQuestions, count, importedPercentage) {
+        const importedCount = Math.min(importedQuestions.length, Math.round(count * importedPercentage / 100));
+        const selected = [
+            ...shuffle(importedQuestions).slice(0, importedCount),
+            ...shuffle(standardQuestions).slice(0, count - importedCount)
+        ];
+        const remaining = [...standardQuestions, ...importedQuestions].filter(question => !selected.includes(question));
+        return shuffle([...selected, ...remaining]).slice(0, count);
+    }
+
+    function initExam() {
+        updateExamSettings();
+        activeMcQuestions = shuffle(importedMcQuestions).slice(0, examSettings.mcCount);
+        activeOpenQuestions = shuffle(importedOpenQuestions).slice(0, examSettings.openCount);
+
+        // Render MC Questions
+        const mcContainer = document.getElementById('mc-questions-container');
+        mcContainer.innerHTML = '';
+        activeMcQuestions.forEach((q, index) => {
+            let optionsHtml = '';
+            const randomizedOptions = shuffle(q.options.map((text, originalIndex) => ({ text, originalIndex })));
+            randomizedOptions.forEach(({ text, originalIndex }) => {
+                optionsHtml += `
+                    <label class="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-wrts-50/50 hover:border-wrts-300 cursor-pointer transition">
+                        <input type="radio" name="mc_${q.id}" value="${originalIndex}" onchange="updateProgress()" class="mt-0.5 text-wrts-600 focus:ring-wrts-500">
+                        <span class="text-slate-700 text-sm md:text-base">${text}</span>
+                    </label>
+                `;
+            });
+
+            mcContainer.innerHTML += `
+                <div class="bg-white rounded-xl shadow-xs border border-slate-200 p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-wrts-600 uppercase tracking-wider">Meerkeuzevraag ${index + 1} · Hoofdstuk ${escapeHtml(q.chapter || 'Onbekend')}${q.imported ? ' <span class="ml-2 rounded-full bg-cyan-100 px-2 py-1 text-[10px] text-cyan-800">Geïmporteerd</span>' : ''}</span>
+                        <span class="text-xs text-slate-400">3 punten</span>
+                    </div>
+                    <p class="font-semibold text-slate-900 text-sm md:text-base">${q.text}</p>
+                    <div class="space-y-2 pt-2">
+                        ${optionsHtml}
+                    </div>
+                </div>
+            `;
+        });
+
+        // Render Open Questions
+        const openContainer = document.getElementById('open-questions-container');
+        openContainer.innerHTML = '';
+        activeOpenQuestions.forEach((q, index) => {
+            openContainer.innerHTML += `
+                <div class="bg-white rounded-xl shadow-xs border border-slate-200 p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Open Vraag ${index + 1} · Hoofdstuk ${escapeHtml(q.chapter || 'Onbekend')}${q.imported ? ' <span class="ml-2 rounded-full bg-cyan-100 px-2 py-1 text-[10px] text-cyan-800">Geïmporteerd</span>' : ''}</span>
+                        <span class="text-xs text-slate-400">Max. ${q.maxPoints} punten</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base mb-1">${q.title}</h3>
+                        <p class="text-slate-700 text-sm md:text-base">${q.text}</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Jouw antwoord:</label>
+                                        <textarea id="answer_${q.id}" rows="4" oninput="updateProgress(); autoGrowTextarea(this)" onkeydown="insertTab(event, this)" class="answer-textarea w-full rounded-xl border border-slate-200 p-3 text-slate-800 text-sm focus:ring-2 focus:ring-wrts-500 focus:border-wrts-500 outline-none bg-slate-50/50" placeholder="Typ hier je antwoord..."></textarea>
+                    </div>
+                    <div>
+                        <button type="button" onclick="toggleModelAnswer(${q.id})" class="text-xs font-semibold text-wrts-600 hover:text-wrts-700 bg-wrts-50 px-3 py-1.5 rounded-lg border border-wrts-100 transition inline-flex items-center space-x-1">
+                            <span>Toon / Verberg Modelantwoord</span>
+                        </button>
+                        <div id="model_${q.id}" class="hidden mt-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs md:text-sm text-amber-900 space-y-1.5">
+                            <p class="font-bold">Modelantwoord & Nakijkinstructie:</p>
+                            <p>${q.modelAnswer}</p>
+                            <button id="ai-prompt_${q.id}" type="button" onclick="copyAiPrompt(${q.id})" class="hidden mt-3 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-2 text-xs font-bold text-wrts-700 hover:bg-cyan-100">
+                                Kopieer AI-nakijkprompt
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label class="text-xs font-bold text-slate-700 uppercase tracking-wide">Jezelf punten toekennen:</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="points_${q.id}" min="0" max="${q.maxPoints}" value="0" class="w-16 rounded-lg border border-slate-300 p-1.5 text-center font-bold text-sm focus:ring-2 focus:ring-wrts-500 outline-none">
+                            <span class="text-xs text-slate-500">/ ${q.maxPoints}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function toggleImportDialog() {
+        document.getElementById('import-dialog').classList.toggle('hidden');
+    }
+
+    function applyTheme(isDark) {
+        document.body.classList.toggle('dark-mode', isDark);
+        const button = document.getElementById('theme-toggle');
+        button.textContent = isDark ? 'Licht' : 'Donker';
+        button.setAttribute('aria-label', isDark ? 'Lichte modus inschakelen' : 'Donkere modus inschakelen');
+    }
+
+    function toggleDarkMode() {
+        const isDark = !document.body.classList.contains('dark-mode');
+        localStorage.setItem('bro-dark-mode', String(isDark));
+        applyTheme(isDark);
+    }
+
+    applyTheme(localStorage.getItem('bro-dark-mode') === 'true');
+
+    let slideshowQuestions = [];
+    let slideshowIndex = 0;
+
+    function openQuestionSlideshow() {
+        slideshowQuestions = [...importedMcQuestions, ...importedOpenQuestions];
+        slideshowIndex = 0;
+        document.getElementById('slideshow-dialog').classList.remove('hidden');
+        renderSlideshowQuestion();
+    }
+
+    function closeQuestionSlideshow() {
+        document.getElementById('slideshow-dialog').classList.add('hidden');
+    }
+
+    function showPreviousImportedQuestion() {
+        if (!slideshowQuestions.length) return;
+        slideshowIndex = (slideshowIndex - 1 + slideshowQuestions.length) % slideshowQuestions.length;
+        renderSlideshowQuestion();
+    }
+
+    function showNextImportedQuestion() {
+        if (!slideshowQuestions.length) return;
+        slideshowIndex = (slideshowIndex + 1) % slideshowQuestions.length;
+        renderSlideshowQuestion();
+    }
+
+    function deleteCurrentImportedQuestion() {
+        const question = slideshowQuestions[slideshowIndex];
+        if (!question) return;
+
+        const questionList = question.options ? importedMcQuestions : importedOpenQuestions;
+        const questionIndex = questionList.findIndex(item => item.id === question.id);
+        if (questionIndex >= 0) questionList.splice(questionIndex, 1);
+
+        slideshowQuestions = [...importedMcQuestions, ...importedOpenQuestions];
+        if (slideshowIndex >= slideshowQuestions.length) slideshowIndex = Math.max(0, slideshowQuestions.length - 1);
+        updateImportedQuestionCount();
+        renderSlideshowQuestion();
+    }
+
+    function renderSlideshowQuestion() {
+        const content = document.getElementById('slideshow-content');
+        const counter = document.getElementById('slideshow-counter');
+        if (!slideshowQuestions.length) {
+            counter.textContent = '0 / 0';
+            content.innerHTML = '<p class="text-sm text-slate-500">Je hebt nog geen vragen geïmporteerd.</p>';
+            return;
+        }
+
+        const question = slideshowQuestions[slideshowIndex];
+        counter.textContent = `${slideshowIndex + 1} / ${slideshowQuestions.length}`;
+        if (question.options) {
+            content.innerHTML = `
+                <p class="text-xs font-bold uppercase tracking-wider text-wrts-600">Hoofdstuk ${escapeHtml(question.chapter || 'Onbekend')}</p>
+                <p class="mt-2 font-semibold text-slate-900">${escapeHtml(question.text)}</p>
+                <ol class="mt-4 space-y-2" type="a">
+                    ${question.options.map((option, index) => `<li class="rounded-lg border ${index === question.answer ? 'border-emerald-300 bg-emerald-50' : 'border-cyan-100 bg-white'} px-3 py-2 text-sm text-slate-700">${escapeHtml(option)}${index === question.answer ? ' <strong class="text-emerald-700">(juist)</strong>' : ''}</li>`).join('')}
+                </ol>`;
+        } else {
+            content.innerHTML = `
+                <p class="text-xs font-bold uppercase tracking-wider text-wrts-600">Open vraag · Hoofdstuk ${escapeHtml(question.chapter || 'Onbekend')}</p>
+                <p class="mt-2 font-semibold text-slate-900">${escapeHtml(question.text)}</p>
+                <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><strong>Modelantwoord:</strong><br>${escapeHtml(question.modelAnswer)}</div>`;
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>'"]/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        }[character]));
+    }
+
+    function importQuestionText() {
+        const text = document.getElementById('question-text').value;
+        const status = document.getElementById('import-status');
+
+        try {
+            const parsed = parseQuestionText(text);
+            importedMcQuestions.push(...parsed.multipleChoice);
+            importedOpenQuestions.push(...parsed.open);
+            updateImportedQuestionCount();
+            status.textContent = `${parsed.multipleChoice.length + parsed.open.length} vraag${parsed.multipleChoice.length + parsed.open.length === 1 ? '' : 'en'} toegevoegd. Alleen geïmporteerde vragen worden gebruikt.`;
+            status.className = 'mt-2 text-xs text-emerald-700 font-semibold';
+        } catch (error) {
+            status.textContent = `Importeren mislukt: ${error.message}`;
+            status.className = 'mt-2 text-xs text-rose-700 font-semibold';
+        }
+    }
+
+    function updateImportedQuestionCount() {
+        const totalImported = importedMcQuestions.length + importedOpenQuestions.length;
+        const mcInput = document.getElementById('exam-mc-count');
+        const openInput = document.getElementById('exam-open-count');
+        const previousMcMax = Number.parseInt(mcInput.max, 10) || 0;
+        const previousOpenMax = Number.parseInt(openInput.max, 10) || 0;
+        document.getElementById('total-question-count').textContent = `${totalImported} beschikbaar`;
+        mcInput.max = importedMcQuestions.length;
+        openInput.max = importedOpenQuestions.length;
+        if (Number.parseInt(mcInput.value, 10) === previousMcMax || Number.parseInt(mcInput.value, 10) === 0) mcInput.value = importedMcQuestions.length;
+        if (Number.parseInt(openInput.value, 10) === previousOpenMax || Number.parseInt(openInput.value, 10) === 0) openInput.value = importedOpenQuestions.length;
+        updateExamSettings();
+    }
+
+    function parseQuestionText(text) {
+        const multipleChoice = [];
+        const open = [];
+        const multipleChoicePattern = /"([\s\S]*?)"/g;
+        const optionPattern = /\([a-z]\.\s*([^)]*?)\)/gi;
+        let multipleChoiceMatch;
+
+        while ((multipleChoiceMatch = multipleChoicePattern.exec(text)) !== null) {
+            const block = multipleChoiceMatch[1].trim();
+            const options = [];
+            let optionMatch;
+            while ((optionMatch = optionPattern.exec(block)) !== null) {
+                options.push(optionMatch[1].trim());
+            }
+            const questionText = block.replace(optionPattern, '').replace(/\s+/g, ' ').trim();
+            const answer = options.findIndex(option => option.endsWith('*'));
+            if (questionText && options.length >= 2 && answer >= 0) {
+                const chapterData = extractChapter(questionText);
+                multipleChoice.push({ id: nextQuestionId(), text: chapterData.text, chapter: chapterData.chapter, options: options.map(option => option.replace(/\*$/, '').trim()), answer, imported: true });
+            }
+        }
+
+        const openPattern = /\[\s*([\s\S]*?)\s*\{\s*([\s\S]*?)\s*\}\s*([\s\S]*?)\]/g;
+        let match;
+        while ((match = openPattern.exec(text)) !== null) {
+            const chapterData = extractChapter(`${match[1].trim()} ${match[3].trim()}`);
+            const questionText = chapterData.text;
+            const modelAnswer = match[2].trim();
+            if (!questionText || !modelAnswer) continue;
+            open.push({ id: nextQuestionId(), title: `Geïmporteerde open vraag ${open.length + 1}`, text: questionText, chapter: chapterData.chapter, maxPoints: 10, modelAnswer, imported: true });
+        }
+
+        if (!multipleChoice.length && !open.length) {
+            throw new Error('Geen geldige vragen gevonden. Controleer de haakjes en het sterretje.');
+        }
+        return { multipleChoice, open };
+    }
+
+    function extractChapter(text) {
+        const match = text.match(/#(1\.1|1\.2|1\.3|1\.4|boek)#/i);
+        return {
+            chapter: match ? match[1].toLowerCase() : 'Onbekend',
+            text: text.replace(/#(1\.1|1\.2|1\.3|1\.4|boek)#/gi, '').replace(/\s+/g, ' ').trim()
+        };
+    }
+
+    function shuffle(items) {
+        return [...items].sort(() => Math.random() - 0.5);
+    }
+
+    function getRequestedCount(id) {
+        return Math.max(0, Number.parseInt(document.getElementById(id).value, 10) || 0);
+    }
+
+    function syncRandomSetting(sourceId) {
+        const source = document.getElementById(sourceId);
+        const otherId = sourceId === 'complete-random' ? 'start-random-imported' : 'complete-random';
+        document.getElementById(otherId).checked = source.checked;
+    }
+
+    function nextQuestionId() {
+        return questionIdCounter++;
+    }
+
+    function startExam() {
+        updateExamSettings();
+        if (examSettings.mcCount + examSettings.openCount === 0) {
+            const status = document.getElementById('import-status');
+            status.textContent = 'Kies minstens één geïmporteerde vraag voordat je start.';
+            status.className = 'mt-2 text-xs text-rose-700 font-semibold';
+            toggleImportDialog();
+            return;
+        }
+        document.getElementById('welcome-screen').classList.add('hidden');
+        document.getElementById('exam-form').classList.remove('hidden');
+        document.getElementById('header-progress').classList.remove('hidden');
+        document.getElementById('progress-bar-container').classList.remove('hidden');
+        initExam();
+        updateProgress();
+        startExamTimer();
+    }
+
+    function startExamTimer() {
+        remainingSeconds = examSettings.duration * 60;
+        examSubmitted = false;
+        document.getElementById('exam-timer').classList.remove('hidden');
+        updateTimerDisplay();
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            remainingSeconds--;
+            updateTimerDisplay();
+            if (remainingSeconds <= 0) {
+                clearInterval(timerInterval);
+                submitExam(true);
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(Math.max(remainingSeconds, 0) / 60);
+        const seconds = Math.max(remainingSeconds, 0) % 60;
+        const timerText = document.getElementById('timer-text');
+        timerText.textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
+        document.getElementById('exam-timer').className = remainingSeconds <= 300
+            ? 'rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-800'
+            : 'rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800';
+    }
+
+    function updateProgress() {
+        let answeredMC = 0;
+        activeMcQuestions.forEach(q => {
+            if (document.querySelector(`input[name="mc_${q.id}"]:checked`)) answeredMC++;
+        });
+        
+        const filledOpen = [...document.querySelectorAll('#open-questions-container textarea')]
+            .filter(textarea => textarea.value.trim().length > 0).length;
+        const totalAnswered = answeredMC + filledOpen;
+        const totalQuestions = activeMcQuestions.length + activeOpenQuestions.length;
+        const percentage = Math.round((totalAnswered / totalQuestions) * 100);
+        
+        document.getElementById('progress-text').innerText = `${totalAnswered} / ${totalQuestions}`;
+        document.getElementById('progress-bar').style.width = `${percentage}%`;
+    }
+
+    function autoGrowTextarea(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = `${Math.min(textarea.scrollHeight, 520)}px`;
+    }
+
+    function insertTab(event, textarea) {
+        if (event.key !== 'Tab') return;
+        event.preventDefault();
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        textarea.value = `${textarea.value.slice(0, start)}\t${textarea.value.slice(end)}`;
+        textarea.selectionStart = start + 1;
+        textarea.selectionEnd = start + 1;
+        autoGrowTextarea(textarea);
+        updateProgress();
+    }
+
+    function toggleModelAnswer(id) {
+        const el = document.getElementById(`model_${id}`);
+        el.classList.toggle('hidden');
+        document.getElementById(`ai-prompt_${id}`).classList.toggle('hidden', el.classList.contains('hidden'));
+    }
+
+    async function copyAiPrompt(id) {
+        const question = activeOpenQuestions.find(item => item.id === id);
+        const answerField = document.getElementById(`answer_${id}`);
+        const button = document.getElementById(`ai-prompt_${id}`);
+        if (!question || !answerField) return;
+
+        const modelAnswer = stripHtml(question.modelAnswer);
+        const prompt = `hoi ik wil graag dat jij tentamendocent speelt van een moeilijke tentamen, ik heb zojuist een openvraag gemaakt die "${question.maxPoints}" aantal punten waard is. dit is het modelantoord "${modelAnswer}", en dit is mijn antwoord "${answerField.value.trim()}" hoeveel punten zou je me geven?`;
+
+        try {
+            await navigator.clipboard.writeText(prompt);
+            button.textContent = 'Prompt gekopieerd';
+            setTimeout(() => { button.textContent = 'Kopieer AI-nakijkprompt'; }, 1800);
+        } catch (error) {
+            button.textContent = 'Kopiëren mislukt';
+        }
+    }
+
+    function stripHtml(value) {
+        const element = document.createElement('div');
+        element.innerHTML = value;
+        return element.textContent || element.innerText || '';
+    }
+
+    function submitExam(timeExpired = false) {
+        if (examSubmitted) return;
+        examSubmitted = true;
+        clearInterval(timerInterval);
+        // Bereken MC Score
+        let mcCorrectCount = 0;
+        activeMcQuestions.forEach((q) => {
+            const selected = document.querySelector(`input[name="mc_${q.id}"]:checked`);
+            if (selected && parseInt(selected.value) === q.answer) {
+                mcCorrectCount++;
+            }
+        });
+        const mcScore = mcCorrectCount * 3; // 3 punten per vraag
+
+        // Bereken Open Score
+        let openScore = 0;
+        activeOpenQuestions.forEach((q) => {
+            const val = parseFloat(document.getElementById(`points_${q.id}`).value) || 0;
+            const cappedVal = Math.min(Math.max(0, val), q.maxPoints);
+            openScore += cappedVal;
+        });
+
+        const mcMaxScore = activeMcQuestions.length * 3;
+        const openMaxScore = activeOpenQuestions.reduce((total, question) => total + question.maxPoints, 0);
+        const totalPossible = mcMaxScore + openMaxScore;
+        const totalScore = mcScore + openScore;
+
+        // Cijferformule: Cijfer = 1.0 + 9.0 * (Behaalde punten / maximaal aantal punten)
+        let finalGrade = 1.0 + 9.0 * (totalScore / totalPossible);
+        finalGrade = Math.round(finalGrade * 10) / 10;
+        if (finalGrade > 10.0) finalGrade = 10.0;
+        if (finalGrade < 1.0) finalGrade = 1.0;
+
+        // UI Aanpassen
+        document.getElementById('exam-form').classList.add('hidden');
+        document.getElementById('header-progress').classList.add('hidden');
+        document.getElementById('progress-bar-container').classList.add('hidden');
+        document.getElementById('exam-timer').classList.add('hidden');
+        document.getElementById('results-screen').classList.remove('hidden');
+        document.getElementById('timer-result').classList.toggle('hidden', !timeExpired);
+
+        document.getElementById('res-mc-score').innerText = `${mcScore} / ${mcMaxScore}`;
+        document.getElementById('res-open-score').innerText = `${openScore} / ${openMaxScore}`;
+        document.getElementById('res-total-score').innerText = `${totalScore} / ${totalPossible}`;
+        document.getElementById('res-final-grade').innerText = finalGrade.toFixed(1);
+        renderReviewOverview();
+        renderChapterAnalysis();
+
+        const statusEl = document.getElementById('res-status');
+        if (finalGrade >= 5.5) {
+            statusEl.innerText = "Gefeliciteerd, Voldoende!";
+            statusEl.className = "text-xs mt-2 text-emerald-400 font-semibold";
+        } else {
+            statusEl.innerText = "Helaas, Onvoldoende. Blijf oefenen!";
+            statusEl.className = "text-xs mt-2 text-rose-400 font-semibold";
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderChapterAnalysis() {
+        const stats = {};
+        const addScore = (chapter, earned, possible) => {
+            const key = chapter || 'Onbekend';
+            if (!stats[key]) stats[key] = { earned: 0, possible: 0 };
+            stats[key].earned += earned;
+            stats[key].possible += possible;
+        };
+
+        activeMcQuestions.forEach(question => {
+            const selected = document.querySelector(`input[name="mc_${question.id}"]:checked`);
+            const earned = selected && Number.parseInt(selected.value, 10) === question.answer ? 3 : 0;
+            addScore(question.chapter, earned, 3);
+        });
+        activeOpenQuestions.forEach(question => {
+            const points = Number.parseFloat(document.getElementById(`points_${question.id}`).value) || 0;
+            addScore(question.chapter, Math.min(Math.max(0, points), question.maxPoints), question.maxPoints);
+        });
+
+        const entries = Object.entries(stats).map(([chapter, score]) => ({
+            chapter,
+            ...score,
+            percentage: score.possible ? (score.earned / score.possible) * 100 : 0
+        })).sort((first, second) => first.percentage - second.percentage);
+        const analysis = document.getElementById('chapter-analysis');
+        const breakdown = document.getElementById('chapter-breakdown');
+        if (!entries.length) {
+            analysis.textContent = 'Er zijn geen hoofdstukgegevens beschikbaar.';
+            breakdown.innerHTML = '';
+            return;
+        }
+
+        const weakest = entries[0];
+        analysis.textContent = `Je kent hoofdstuk ${weakest.chapter} momenteel het minst: ${weakest.percentage.toFixed(0)}% (${weakest.earned.toFixed(1)} / ${weakest.possible} punten).`;
+        breakdown.innerHTML = entries.map(entry => `
+            <div class="flex items-center justify-between rounded-lg border border-cyan-100 bg-white px-3 py-2 text-sm">
+                <span class="font-semibold text-slate-700">Hoofdstuk ${escapeHtml(entry.chapter)}</span>
+                <span class="text-slate-600">${entry.percentage.toFixed(0)}% · ${entry.earned.toFixed(1)} / ${entry.possible} punten</span>
+            </div>
+        `).join('');
+    }
+
+    function renderReviewOverview() {
+        const reviewContent = document.getElementById('review-content');
+        const mcReview = activeMcQuestions.map((question, index) => {
+            const selected = document.querySelector(`input[name="mc_${question.id}"]:checked`);
+            const selectedIndex = selected ? Number.parseInt(selected.value, 10) : -1;
+            const isCorrect = selectedIndex === question.answer;
+            const selectedText = selectedIndex >= 0 ? question.options[selectedIndex] : 'Niet ingevuld';
+            const statusClass = isCorrect ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50';
+            const statusText = isCorrect ? 'Goed beantwoord' : 'Fout of niet ingevuld';
+            return `
+                <article class="rounded-xl border ${statusClass} p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <strong class="text-sm text-slate-800">Meerkeuzevraag ${index + 1}</strong>
+                        <span class="text-xs font-bold ${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">${statusText}</span>
+                    </div>
+                    <p class="mt-2 text-sm font-semibold text-slate-800">${escapeHtml(question.text)}</p>
+                    <p class="mt-2 text-sm text-slate-700"><strong>Jouw antwoord:</strong> ${escapeHtml(selectedText)}</p>
+                    <p class="mt-1 text-sm text-slate-700"><strong>Juiste antwoord:</strong> ${escapeHtml(question.options[question.answer])}</p>
+                </article>`;
+        }).join('');
+
+        const textareas = [...document.querySelectorAll('#open-questions-container textarea')];
+        const openReview = activeOpenQuestions.map((question, index) => {
+            const answer = textareas[index] ? textareas[index].value.trim() : '';
+            const points = document.getElementById(`points_${question.id}`).value || '0';
+            return `
+                <article class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <strong class="text-sm text-slate-800">Open vraag ${index + 1}: ${escapeHtml(question.title)}</strong>
+                        <span class="text-xs font-bold text-amber-800">${escapeHtml(points)} / ${question.maxPoints} punten</span>
+                    </div>
+                    <p class="mt-2 text-sm font-semibold text-slate-800">${escapeHtml(question.text)}</p>
+                    <div class="mt-3 rounded-lg border border-white bg-white/70 p-3 text-sm text-slate-700"><strong>Jouw antwoord:</strong><br>${escapeHtml(answer || 'Niet ingevuld')}</div>
+                    <div class="mt-2 rounded-lg border border-amber-200 bg-white/60 p-3 text-sm text-amber-900"><strong>Modelantwoord:</strong><br>${escapeHtml(question.modelAnswer)}</div>
+                </article>`;
+        }).join('');
+
+        reviewContent.innerHTML = `<h4 class="pt-2 text-sm font-bold uppercase tracking-wide text-wrts-700">Meerkeuzevragen</h4>${mcReview}<h4 class="pt-4 text-sm font-bold uppercase tracking-wide text-wrts-700">Open vragen</h4>${openReview}`;
+    }
+</script>
+</body>
+</html>
