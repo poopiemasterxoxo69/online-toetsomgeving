@@ -355,6 +355,7 @@
 
     const importedMcQuestions = [];
     const importedOpenQuestions = [];
+    const importedQuestionsStorageKey = 'bro-imported-questions-v1';
     let questionIdCounter = 25;
     let activeMcQuestions = [...mcQuestions];
     let activeOpenQuestions = [...openQuestions];
@@ -466,6 +467,50 @@
         document.getElementById('import-dialog').classList.toggle('hidden');
     }
 
+    function loadImportedQuestions() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(importedQuestionsStorageKey) || '{}');
+            const savedMcQuestions = Array.isArray(saved.multipleChoice) ? saved.multipleChoice : [];
+            const savedOpenQuestions = Array.isArray(saved.open) ? saved.open : [];
+
+            savedMcQuestions.forEach(question => {
+                if (question && Number.isInteger(question.id) && typeof question.text === 'string' &&
+                    Array.isArray(question.options) && question.options.length >= 2 &&
+                    Number.isInteger(question.answer) && question.answer >= 0 && question.answer < question.options.length) {
+                    importedMcQuestions.push({ ...question, imported: true });
+                }
+            });
+            savedOpenQuestions.forEach(question => {
+                if (question && Number.isInteger(question.id) && typeof question.title === 'string' &&
+                    typeof question.text === 'string' && typeof question.modelAnswer === 'string' &&
+                    Number.isFinite(question.maxPoints) && question.maxPoints > 0) {
+                    importedOpenQuestions.push({ ...question, imported: true });
+                }
+            });
+
+            const highestId = [...importedMcQuestions, ...importedOpenQuestions]
+                .reduce((highest, question) => Math.max(highest, question.id), 24);
+            questionIdCounter = highestId + 1;
+            return true;
+        } catch (error) {
+            console.warn('Opgeslagen vragen konden niet worden geladen.', error);
+            return false;
+        }
+    }
+
+    function saveImportedQuestions() {
+        try {
+            localStorage.setItem(importedQuestionsStorageKey, JSON.stringify({
+                multipleChoice: importedMcQuestions,
+                open: importedOpenQuestions
+            }));
+            return true;
+        } catch (error) {
+            console.warn('Vragen konden niet in deze browser worden opgeslagen.', error);
+            return false;
+        }
+    }
+
     function applyTheme(isDark) {
         document.body.classList.toggle('dark-mode', isDark);
         const button = document.getElementById('theme-toggle');
@@ -515,6 +560,7 @@
         const questionIndex = questionList.findIndex(item => item.id === question.id);
         if (questionIndex >= 0) questionList.splice(questionIndex, 1);
 
+        saveImportedQuestions();
         slideshowQuestions = [...importedMcQuestions, ...importedOpenQuestions];
         if (slideshowIndex >= slideshowQuestions.length) slideshowIndex = Math.max(0, slideshowQuestions.length - 1);
         updateImportedQuestionCount();
@@ -561,8 +607,9 @@
             const parsed = parseQuestionText(text);
             importedMcQuestions.push(...parsed.multipleChoice);
             importedOpenQuestions.push(...parsed.open);
+            const saved = saveImportedQuestions();
             updateImportedQuestionCount();
-            status.textContent = `${parsed.multipleChoice.length + parsed.open.length} vraag${parsed.multipleChoice.length + parsed.open.length === 1 ? '' : 'en'} toegevoegd. Alleen geïmporteerde vragen worden gebruikt.`;
+            status.textContent = `${parsed.multipleChoice.length + parsed.open.length} vraag${parsed.multipleChoice.length + parsed.open.length === 1 ? '' : 'en'} toegevoegd${saved ? ' en opgeslagen in deze browser' : ', maar opslaan is mislukt'}. Alleen geïmporteerde vragen worden gebruikt.`;
             status.className = 'mt-2 text-xs text-emerald-700 font-semibold';
         } catch (error) {
             status.textContent = `Importeren mislukt: ${error.message}`;
@@ -895,6 +942,13 @@
         }).join('');
 
         reviewContent.innerHTML = `<h4 class="pt-2 text-sm font-bold uppercase tracking-wide text-wrts-700">Meerkeuzevragen</h4>${mcReview}<h4 class="pt-4 text-sm font-bold uppercase tracking-wide text-wrts-700">Open vragen</h4>${openReview}`;
+    }
+
+    if (loadImportedQuestions()) {
+        updateImportedQuestionCount();
+        if (importedMcQuestions.length + importedOpenQuestions.length > 0) {
+            document.getElementById('import-status').textContent = `${importedMcQuestions.length + importedOpenQuestions.length} opgeslagen vraag${importedMcQuestions.length + importedOpenQuestions.length === 1 ? '' : 'en'} geladen uit deze browser.`;
+        }
     }
 </script>
 </body>
