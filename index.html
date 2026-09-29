@@ -361,6 +361,7 @@
     const importedMcQuestions = [];
     const importedOpenQuestions = [];
     const importedQuestionsStorageKey = 'bro-imported-questions-v1';
+    const questionHistoryStorageKey = 'bro-question-history-v1';
     let questionIdCounter = 25;
     let activeMcQuestions = [...mcQuestions];
     let activeOpenQuestions = [...openQuestions];
@@ -397,10 +398,71 @@
         return shuffle([...selected, ...remaining]).slice(0, count);
     }
 
+    function getQuestionHistoryId(type, question) {
+        const normalize = value => String(value || '').normalize('NFKC').toLocaleLowerCase('nl-NL').replace(/\s+/g, ' ').trim();
+        const identity = JSON.stringify([
+            type,
+            normalize(question.text),
+            type === 'mc' ? question.options.map(normalize) : []
+        ]);
+        let hashA = 0x811c9dc5;
+        let hashB = 0x9e3779b9;
+        for (let index = 0; index < identity.length; index++) {
+            const character = identity.charCodeAt(index);
+            hashA = Math.imul(hashA ^ character, 0x01000193);
+            hashB = Math.imul(hashB ^ (character + index), 0x01000193);
+        }
+        return `${type}-${(hashA >>> 0).toString(16)}-${(hashB >>> 0).toString(16)}`;
+    }
+
+    function selectRandomQuestions(type, questionPool, count, excludedIds = new Set(), resetCycleOnShortage = false) {
+        if (count <= 0 || questionPool.length === 0) return [];
+
+        const historyKey = type === 'mc' ? 'multipleChoice' : 'open';
+        let history = { multipleChoice: [], open: [] };
+        try {
+            const savedHistory = JSON.parse(localStorage.getItem(questionHistoryStorageKey) || '{}');
+            history = {
+                multipleChoice: Array.isArray(savedHistory.multipleChoice) ? savedHistory.multipleChoice : [],
+                open: Array.isArray(savedHistory.open) ? savedHistory.open : []
+            };
+        } catch (error) {
+            console.warn('Vraaggeschiedenis kon niet worden geladen.', error);
+        }
+
+        const questionHistoryIds = new Map(questionPool.map(question => [question.id, getQuestionHistoryId(type, question)]));
+        const poolHistoryIds = new Set(questionHistoryIds.values());
+        // Convert older ID-based history entries so previously seen questions stay on cooldown.
+        const previousHistoryIds = history[historyKey]
+            .map(entry => typeof entry === 'number' ? questionHistoryIds.get(entry) : entry)
+            .filter(id => poolHistoryIds.has(id));
+        const available = questionPool.filter(question => !excludedIds.has(question.id));
+        const previouslyAsked = new Set(previousHistoryIds);
+        const notRecentlyAsked = available.filter(question => !previouslyAsked.has(questionHistoryIds.get(question.id)));
+        const selected = shuffle(notRecentlyAsked).slice(0, count);
+        const cycleWasExhausted = selected.length < count;
+
+        if (selected.length < count) {
+            const selectedIds = new Set(selected.map(question => question.id));
+            selected.push(...shuffle(available.filter(question => !selectedIds.has(question.id))).slice(0, count - selected.length));
+        }
+
+        history[historyKey] = [...new Set([
+            ...(resetCycleOnShortage && cycleWasExhausted ? [] : previouslyAsked),
+            ...selected.map(question => questionHistoryIds.get(question.id))
+        ])];
+        try {
+            localStorage.setItem(questionHistoryStorageKey, JSON.stringify(history));
+        } catch (error) {
+            console.warn('Vraaggeschiedenis kon niet worden opgeslagen.', error);
+        }
+        return selected;
+    }
+
     function initExam() {
         updateExamSettings();
-        activeMcQuestions = shuffle(importedMcQuestions).slice(0, examSettings.mcCount);
-        activeOpenQuestions = shuffle(importedOpenQuestions).slice(0, examSettings.openCount);
+        activeMcQuestions = selectRandomQuestions('mc', importedMcQuestions, examSettings.mcCount, new Set(), true);
+        activeOpenQuestions = selectRandomQuestions('open', importedOpenQuestions, examSettings.openCount, new Set(), true);
         unanswerableQuestionCount = 0;
         replacedMcQuestionIds.clear();
         replacedOpenQuestionIds.clear();
@@ -496,9 +558,8 @@
         if (!currentQuestion) return;
 
         const activeIds = new Set(activeQuestions.map(question => question.id));
-        const replacement = shuffle(importedQuestions.filter(question =>
-            !activeIds.has(question.id) && !replacedIds.has(question.id)
-        ))[0];
+        const excludedIds = new Set([...activeIds, ...replacedIds]);
+        const replacement = selectRandomQuestions(type, importedQuestions, 1, excludedIds)[0];
         if (!replacement) {
             document.getElementById(`replace-status-${type}-${index}`).textContent = 'Geen ongebruikte vervangende vraag beschikbaar.';
             return;
@@ -944,7 +1005,7 @@
         if (!question || !answerField) return;
 
         const modelAnswer = stripHtml(question.modelAnswer);
-        const prompt = `hoi ik wil graag dat jij tentamendocent speelt van een moeilijke tentamen, ik heb zojuist een openvraag gemaakt die "${question.maxPoints}" aantal punten waard is. dit is het modelantoord "${modelAnswer}", en dit is mijn antwoord "${answerField.value.trim()}" hoeveel punten zou je me geven?`;
+        const prompt = `hoi ik wil graag dat jij tentamendocent speelt van een moeilijke tentamen, ik heb zojuist een openvraag gemaakt die "${question.maxPoints}" aantal punten waard is. dit is het modelantoord "${modelAnswer}", en dit is mijn antwoord "${answerField.value.trim()}" hoeveel punten zou je me geven?, en dit is de vraag btw: "${stripHtml(question.text)}"`;
 
         try {
             await navigator.clipboard.writeText(prompt);
@@ -953,6 +1014,18 @@
         } catch (error) {
             button.textContent = 'Kopiëren mislukt';
         }
+    }
+
+    async function copyMcReviewPrompt(button) {
+        const prompt = `hoi kan je me helpen met deze vraag: "${button.dataset.question}". ik heb dit ingevuld "${button.dataset.userAnswer}", en het modelantwoord is dit "${button.dataset.modelAnswer}", kan je me het verschil uitleggen en me helpen om het beter te begrijpen om te verbeteren`;
+        const originalText = button.textContent;
+        try {
+            await navigator.clipboard.writeText(prompt);
+            button.textContent = 'Prompt gekopieerd';
+        } catch (error) {
+            button.textContent = 'Kopiëren mislukt';
+        }
+        setTimeout(() => { button.textContent = originalText; }, 1800);
     }
 
     function stripHtml(value) {
@@ -1073,7 +1146,7 @@
             const selectedText = selectedIndex >= 0 ? question.options[selectedIndex] : 'Niet ingevuld';
             const statusClass = isCorrect ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50';
             const statusText = isCorrect ? 'Goed beantwoord' : 'Fout of niet ingevuld';
-            return `
+            const reviewHtml = `
                 <article class="rounded-xl border ${statusClass} p-4">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <strong class="text-sm text-slate-800">Meerkeuzevraag ${index + 1}</strong>
@@ -1082,8 +1155,13 @@
                     <p class="mt-2 text-sm font-semibold text-slate-800">${escapeHtml(question.text)}</p>
                     <p class="mt-2 text-sm text-slate-700"><strong>Jouw antwoord:</strong> ${escapeHtml(selectedText)}</p>
                     <p class="mt-1 text-sm text-slate-700"><strong>Juiste antwoord:</strong> ${escapeHtml(question.options[question.answer])}</p>
+                    <button type="button" onclick="copyMcReviewPrompt(this)" data-question="${escapeHtml(question.text)}" data-user-answer="${escapeHtml(selectedText)}" data-model-answer="${escapeHtml(question.options[question.answer])}" class="mt-3 rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-wrts-700 hover:bg-cyan-50">Kopieer AI-uitlegprompt</button>
                 </article>`;
-        }).join('');
+            return { isCorrect, reviewHtml };
+        });
+
+        const incorrectMcReview = mcReview.filter(review => !review.isCorrect).map(review => review.reviewHtml).join('');
+        const correctMcReview = mcReview.filter(review => review.isCorrect).map(review => review.reviewHtml).join('');
 
         const textareas = [...document.querySelectorAll('#open-questions-container textarea')];
         const openReview = activeOpenQuestions.map((question, index) => {
@@ -1101,7 +1179,19 @@
                 </article>`;
         }).join('');
 
-        reviewContent.innerHTML = `<h4 class="pt-2 text-sm font-bold uppercase tracking-wide text-wrts-700">Meerkeuzevragen</h4>${mcReview}<h4 class="pt-4 text-sm font-bold uppercase tracking-wide text-wrts-700">Open vragen</h4>${openReview}`;
+        reviewContent.innerHTML = `
+            <section class="space-y-3">
+                <h4 class="pt-2 text-sm font-bold uppercase tracking-wide text-rose-700">Meerkeuzevragen om te verbeteren (${mcReview.filter(review => !review.isCorrect).length})</h4>
+                ${incorrectMcReview || '<p class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">Geen fout beantwoorde meerkeuzevragen. Goed gedaan!</p>'}
+            </section>
+            <section class="mt-5 space-y-3">
+                <h4 class="pt-2 text-sm font-bold uppercase tracking-wide text-emerald-700">Goed beantwoorde meerkeuzevragen (${mcReview.filter(review => review.isCorrect).length})</h4>
+                ${correctMcReview || '<p class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">Geen meerkeuzevragen goed beantwoord.</p>'}
+            </section>
+            <section class="mt-5 space-y-3">
+                <h4 class="pt-2 text-sm font-bold uppercase tracking-wide text-wrts-700">Open vragen</h4>
+                ${openReview || '<p class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">Geen open vragen in deze toets.</p>'}
+            </section>`;
     }
 
     if (loadImportedQuestions()) {
