@@ -76,8 +76,23 @@
         #mc-questions-container label:hover { background: #e4faff; border-color: #52cdda; }
         textarea, input[type="number"] { background: rgba(245,253,255,.8) !important; border-color: rgba(18,145,165,.25) !important; }
         .answer-textarea { min-height: 106px; max-height: 520px; overflow-y: auto; resize: vertical; }
-        .slideshow-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: min(640px, calc(100vh - 6rem)); }
-        #slideshow-content { min-height: 0; overflow-y: auto; }
+        .slideshow-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: min(1500px, calc(100vw - 3rem)); height: min(920px, calc(100vh - 2rem)); }
+        #library-body { display: grid; grid-template-columns: minmax(270px, .75fr) minmax(0, 2fr); gap: 1.5rem; min-height: 0; padding: 1.5rem 0; }
+        #library-overview { min-height: 0; overflow-y: auto; padding: .25rem; }
+        #slideshow-content { min-height: 0; overflow-y: auto; padding: 2rem; }
+        #chapter-question-counts { display: grid; grid-template-columns: 1fr; gap: .75rem; max-height: 100%; overflow-y: auto; }
+        #chapter-question-counts button { width: 100%; min-width: 0; padding: 1rem; }
+        #slideshow-content > p + p { margin-top: 1.25rem; line-height: 1.75; }
+        #slideshow-content ol { margin-top: 1.5rem; }
+        #slideshow-content ol li { padding: .9rem 1rem; line-height: 1.6; }
+        @media (max-width: 760px) {
+            .slideshow-panel { width: calc(100vw - 1rem); height: calc(100vh - 1rem); padding: 1rem !important; }
+            #library-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 1rem; padding: 1rem 0; }
+            #library-overview { max-height: 38vh; }
+            #chapter-question-counts { display: flex; flex-direction: row; max-height: 140px; }
+            #chapter-question-counts button { width: auto; min-width: 180px; }
+            #slideshow-content { padding: 1.25rem; }
+        }
         footer { background: rgba(255,255,255,.7) !important; border-color: var(--line) !important; color: #427487 !important; }
         #import-button { display: inline-flex !important; align-items: center; visibility: visible !important; }
         body.dark-mode {
@@ -129,6 +144,7 @@
         body.dark-mode button.border-rose-300 { border-color: rgba(255, 171, 183, .55) !important; color: #ffabb7 !important; }
         body.dark-mode button.border-cyan-300 { border-color: rgba(115, 220, 221, .48) !important; }
         body.dark-mode :focus-visible { outline: 2px solid #6be0e9; outline-offset: 2px; }
+        #copy-questions-button:disabled { cursor: not-allowed; opacity: .55; box-shadow: none; }
         @media (max-width: 640px) { header h1 { font-size: .9rem; } header p { font-size: .65rem; } main { padding: .8rem !important; } }
     </style>
 </head>
@@ -188,22 +204,42 @@
     </div>
 </div>
 
-<div id="slideshow-dialog" class="hidden fixed inset-0 z-[60] bg-slate-900/35 p-4" role="dialog" aria-modal="true" aria-labelledby="slideshow-title">
-    <div class="slideshow-panel mx-auto mt-16 max-w-2xl rounded-2xl border border-cyan-200 bg-white p-5 shadow-2xl">
-        <div class="flex items-start justify-between gap-4">
+<div id="slideshow-dialog" class="hidden fixed inset-0 z-[60] bg-slate-900/55 p-3 md:p-6" role="dialog" aria-modal="true" aria-labelledby="slideshow-title">
+    <div class="slideshow-panel mx-auto mt-2 rounded-3xl border border-cyan-200 bg-white p-5 shadow-2xl md:mt-0 md:p-8">
+        <div class="flex flex-wrap items-start justify-between gap-4 border-b border-cyan-100 pb-4">
             <div>
-                <h2 id="slideshow-title" class="text-lg font-bold text-slate-800">Geïmporteerde vragen</h2>
-                <p id="slideshow-counter" class="mt-1 text-xs text-slate-500">0 / 0</p>
+                <p class="text-xs font-bold uppercase tracking-[.18em] text-wrts-600">Vraagbibliotheek</p>
+                <h2 id="slideshow-title" class="mt-1 text-2xl font-black text-slate-800">Mijn vragen</h2>
+                <p id="slideshow-counter" class="mt-1 text-sm text-slate-500">0 / 0</p>
             </div>
-            <button type="button" onclick="closeQuestionSlideshow()" class="text-xl leading-none text-slate-400 hover:text-slate-700" aria-label="Slideshow sluiten">&times;</button>
+            <div class="flex flex-wrap items-center gap-2">
+                <button id="copy-questions-button" type="button" onclick="copyAllImportedQuestions()" class="rounded-xl bg-wrts-600 px-4 py-2.5 text-sm font-bold text-white">Kopieer alle vragen</button>
+                <button type="button" onclick="closeQuestionSlideshow()" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-lg font-bold text-slate-500 hover:bg-slate-50" aria-label="Vragen sluiten">&times;</button>
+            </div>
         </div>
-        <div id="slideshow-content" class="mt-5 min-h-48 rounded-xl border border-cyan-100 bg-cyan-50/40 p-5"></div>
-        <div class="mt-4 flex justify-between gap-3">
-            <button type="button" onclick="showPreviousImportedQuestion()" class="rounded-lg border border-cyan-300 bg-white px-4 py-2 text-sm font-bold text-wrts-700 hover:bg-cyan-50">Vorige</button>
-            <div class="flex gap-2">
-                <button id="edit-question-button" type="button" onclick="toggleImportedQuestionEditor()" class="rounded-lg border border-cyan-300 bg-white px-4 py-2 text-sm font-bold text-wrts-700 hover:bg-cyan-50">Bewerken</button>
-                <button type="button" onclick="deleteCurrentImportedQuestion()" class="rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-50">Verwijderen</button>
-                <button type="button" onclick="showNextImportedQuestion()" class="rounded-lg bg-wrts-600 px-4 py-2 text-sm font-bold text-white">Volgende</button>
+        <div id="library-body">
+            <section id="library-overview" aria-label="Overzicht vragen">
+                <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-600">Totaal in bibliotheek</h3>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-3"><p class="text-[11px] font-semibold text-slate-500">Totaal</p><p id="library-total-count" class="mt-1 text-2xl font-black text-slate-800">0</p></div>
+                    <div class="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-3"><p class="text-[11px] font-semibold text-slate-500">Meerkeuze</p><p id="library-mc-count" class="mt-1 text-2xl font-black text-slate-800">0</p></div>
+                    <div class="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-3"><p class="text-[11px] font-semibold text-slate-500">Open</p><p id="library-open-count" class="mt-1 text-2xl font-black text-slate-800">0</p></div>
+                </div>
+                <div class="mt-7">
+                    <h3 class="mb-1 text-xs font-bold uppercase tracking-wider text-slate-600">Filter op hoofdstuk</h3>
+                    <p class="mb-3 text-xs leading-relaxed text-slate-500">Selecteer een hoofdstuk om de vragen te bekijken of te bewerken.</p>
+                    <div id="chapter-question-counts" aria-live="polite"></div>
+                </div>
+            </section>
+            <div id="slideshow-content" class="rounded-2xl border border-cyan-100 bg-cyan-50/40"></div>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-cyan-100 pt-4">
+            <button type="button" onclick="showPreviousImportedQuestion()" class="rounded-xl border border-cyan-300 bg-white px-4 py-2.5 text-sm font-bold text-wrts-700 hover:bg-cyan-50">← Vorige</button>
+            <p id="copy-questions-status" class="order-3 w-full text-center text-xs text-slate-500 md:order-none md:w-auto" aria-live="polite"></p>
+            <div class="flex flex-wrap gap-2">
+                <button id="edit-question-button" type="button" onclick="toggleImportedQuestionEditor()" class="rounded-xl border border-cyan-300 bg-white px-4 py-2.5 text-sm font-bold text-wrts-700 hover:bg-cyan-50">Bewerken</button>
+                <button id="delete-question-button" type="button" onclick="deleteCurrentImportedQuestion()" class="rounded-xl border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50">Verwijderen</button>
+                <button type="button" onclick="showNextImportedQuestion()" class="rounded-xl bg-wrts-600 px-4 py-2.5 text-sm font-bold text-white">Volgende →</button>
             </div>
         </div>
     </div>
@@ -685,12 +721,118 @@
     let slideshowQuestions = [];
     let slideshowIndex = 0;
     let editingImportedQuestion = false;
+    let selectedLibraryChapter = null;
 
-    function openQuestionSlideshow() {
-        slideshowQuestions = [...importedMcQuestions, ...importedOpenQuestions];
+    function getLibraryQuestionsForSelectedChapter() {
+        const allQuestions = [...importedMcQuestions, ...importedOpenQuestions];
+        return selectedLibraryChapter === null
+            ? allQuestions
+            : allQuestions.filter(question => (question.chapter || 'Onbekend') === selectedLibraryChapter);
+    }
+
+    function selectLibraryChapter(chapter) {
+        selectedLibraryChapter = chapter;
+        slideshowQuestions = getLibraryQuestionsForSelectedChapter();
         slideshowIndex = 0;
         editingImportedQuestion = false;
+        document.getElementById('copy-questions-status').textContent = '';
+        renderSlideshowQuestion();
+    }
+
+    function renderQuestionLibraryOverview() {
+        const questions = [...importedMcQuestions, ...importedOpenQuestions];
+        const questionsToCopy = getLibraryQuestionsForSelectedChapter();
+        document.getElementById('library-total-count').textContent = questions.length;
+        document.getElementById('library-mc-count').textContent = importedMcQuestions.length;
+        document.getElementById('library-open-count').textContent = importedOpenQuestions.length;
+        const copyButton = document.getElementById('copy-questions-button');
+        copyButton.disabled = questionsToCopy.length === 0;
+        copyButton.textContent = selectedLibraryChapter === null ? 'Kopieer alle vragen' : 'Kopieer vragen van dit hoofdstuk';
+
+        const chapters = new Map();
+        questions.forEach(question => {
+            const chapter = question.chapter || 'Onbekend';
+            if (!chapters.has(chapter)) chapters.set(chapter, { total: 0, mc: 0, open: 0 });
+            const counts = chapters.get(chapter);
+            counts.total++;
+            if (question.options) counts.mc++;
+            else counts.open++;
+        });
+
+        const chapterContainer = document.getElementById('chapter-question-counts');
+        if (!chapters.size) {
+            chapterContainer.innerHTML = '<p class="rounded-xl border border-dashed border-cyan-200 px-3 py-2 text-sm text-slate-500">Er zijn nog geen vragen om te tellen.</p>';
+            return;
+        }
+        const chapterButtons = [...chapters.entries()]
+            .sort(([first], [second]) => first === 'Onbekend' ? 1 : second === 'Onbekend' ? -1 : first.localeCompare(second, 'nl', { numeric: true }))
+            .map(([chapter, counts]) => {
+                const isSelected = selectedLibraryChapter === chapter;
+                const title = chapter === 'Onbekend' ? 'Onbekend hoofdstuk' : `Hoofdstuk ${escapeHtml(chapter)}`;
+                return `<button type="button" data-chapter="${escapeHtml(chapter)}" onclick="selectLibraryChapter(this.dataset.chapter)" aria-pressed="${isSelected}" class="min-w-40 rounded-xl border px-4 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${isSelected ? 'border-cyan-500 bg-cyan-100 shadow-sm' : 'border-cyan-200 bg-white'}">
+                    <span class="block text-sm font-bold text-slate-800">${title}</span>
+                    <span class="mt-1 block text-xs text-slate-500">${counts.total} ${counts.total === 1 ? 'vraag' : 'vragen'} · ${counts.mc} meerkeuze · ${counts.open} open</span>
+                </button>`;
+            }).join('');
+        const allSelected = selectedLibraryChapter === null;
+        chapterContainer.innerHTML = `<button type="button" onclick="selectLibraryChapter(null)" aria-pressed="${allSelected}" class="min-w-40 rounded-xl border px-4 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${allSelected ? 'border-cyan-500 bg-cyan-100 shadow-sm' : 'border-cyan-200 bg-white'}">
+                <span class="block text-sm font-bold text-slate-800">Alle hoofdstukken</span>
+                <span class="mt-1 block text-xs text-slate-500">${questions.length} ${questions.length === 1 ? 'vraag' : 'vragen'} totaal</span>
+            </button>${chapterButtons}`;
+    }
+
+    function formatQuestionForImport(question) {
+        const chapterTag = question.chapter && question.chapter !== 'Onbekend' ? ` #${question.chapter}#` : '';
+        if (question.options) {
+            const options = question.options.map((option, index) => `(${String.fromCharCode(97 + index)}. ${option}${index === question.answer ? '*' : ''})`).join(' ');
+            return `"${question.text}${chapterTag} ${options}"`;
+        }
+        return `[${question.text}${chapterTag} {${stripHtml(question.modelAnswer)}}]`;
+    }
+
+    async function copyAllImportedQuestions() {
+        const questionsToCopy = getLibraryQuestionsForSelectedChapter();
+        const content = questionsToCopy.map(formatQuestionForImport).join('\n\n');
+        const status = document.getElementById('copy-questions-status');
+        if (!content) {
+            status.textContent = selectedLibraryChapter === null
+                ? 'Er zijn nog geen vragen om te kopiëren.'
+                : 'In dit hoofdstuk zijn nog geen vragen om te kopiëren.';
+            return;
+        }
+
+        let copied = false;
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(content);
+                copied = true;
+            } else {
+                const temporaryField = document.createElement('textarea');
+                temporaryField.value = content;
+                temporaryField.setAttribute('readonly', '');
+                temporaryField.style.position = 'fixed';
+                temporaryField.style.opacity = '0';
+                document.body.appendChild(temporaryField);
+                temporaryField.select();
+                copied = document.execCommand('copy');
+                temporaryField.remove();
+            }
+        } catch (error) {
+            copied = false;
+        }
+        status.textContent = copied
+            ? `${questionsToCopy.length} ${questionsToCopy.length === 1 ? 'vraag' : 'vragen'}${selectedLibraryChapter === null ? '' : ` uit hoofdstuk ${selectedLibraryChapter}`} gekopieerd in importformaat.`
+            : 'Kopiëren is niet gelukt. Controleer de klembordrechten van je browser.';
+    }
+
+    function openQuestionSlideshow() {
+        selectedLibraryChapter = null;
+        slideshowQuestions = getLibraryQuestionsForSelectedChapter();
+        slideshowIndex = 0;
+        editingImportedQuestion = false;
+        document.getElementById('copy-questions-status').textContent = '';
         document.getElementById('slideshow-dialog').classList.remove('hidden');
+        renderQuestionLibraryOverview();
         renderSlideshowQuestion();
     }
 
@@ -773,7 +915,7 @@
         if (questionIndex >= 0) questionList.splice(questionIndex, 1);
 
         saveImportedQuestions();
-        slideshowQuestions = [...importedMcQuestions, ...importedOpenQuestions];
+        slideshowQuestions = getLibraryQuestionsForSelectedChapter();
         if (slideshowIndex >= slideshowQuestions.length) slideshowIndex = Math.max(0, slideshowQuestions.length - 1);
         updateImportedQuestionCount();
         renderSlideshowQuestion();
@@ -782,15 +924,18 @@
     function renderSlideshowQuestion() {
         const content = document.getElementById('slideshow-content');
         const counter = document.getElementById('slideshow-counter');
+        renderQuestionLibraryOverview();
         if (!slideshowQuestions.length) {
             document.getElementById('edit-question-button').classList.add('hidden');
+            document.getElementById('delete-question-button').classList.add('hidden');
             counter.textContent = '0 / 0';
-            content.innerHTML = '<p class="text-sm text-slate-500">Je hebt nog geen vragen geïmporteerd.</p>';
+            content.innerHTML = '<div class="flex h-full min-h-48 flex-col items-center justify-center text-center"><span class="text-4xl" aria-hidden="true">✦</span><p class="mt-3 text-lg font-bold text-slate-800">Je vraagbibliotheek is nog leeg</p><p class="mt-1 text-sm text-slate-500">Importeer vragen via ‘Vragen beheren’ om ze hier terug te zien.</p></div>';
             return;
         }
 
         const question = slideshowQuestions[slideshowIndex];
         counter.textContent = `${slideshowIndex + 1} / ${slideshowQuestions.length}`;
+        document.getElementById('delete-question-button').classList.remove('hidden');
         const editButton = document.getElementById('edit-question-button');
         editButton.classList.toggle('hidden', !question.imported);
         editButton.textContent = editingImportedQuestion ? 'Annuleren' : 'Bewerken';
