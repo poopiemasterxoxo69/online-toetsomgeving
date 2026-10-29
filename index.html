@@ -80,15 +80,55 @@
         #slideshow-content { min-height: 0; overflow-y: auto; }
         footer { background: rgba(255,255,255,.7) !important; border-color: var(--line) !important; color: #427487 !important; }
         #import-button { display: inline-flex !important; align-items: center; visibility: visible !important; }
-        body.dark-mode { color: #d8f3f5; background: linear-gradient(135deg, #102b38 0%, #173d49 52%, #153b36 100%); }
+        body.dark-mode {
+            color-scheme: dark;
+            color: #e7f2f5;
+            background: linear-gradient(135deg, #102b38 0%, #173d49 52%, #153b36 100%);
+        }
         body.dark-mode header { background: linear-gradient(180deg, rgba(18, 50, 63, .98), rgba(17, 57, 69, .96)) !important; border-color: rgba(115, 220, 221, .25) !important; }
-        body.dark-mode #welcome-screen, body.dark-mode #results-screen, body.dark-mode #exam-form > div > div, body.dark-mode #mc-questions-container > div, body.dark-mode #open-questions-container > div { background: rgba(20, 53, 65, .94) !important; border-color: rgba(115, 220, 221, .24) !important; color: #d8f3f5; }
-        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode p, body.dark-mode span, body.dark-mode label, body.dark-mode strong { color: inherit; }
-        body.dark-mode .text-slate-900, body.dark-mode .text-slate-800, body.dark-mode .text-slate-700 { color: #e4fbfb !important; }
-        body.dark-mode .text-slate-600, body.dark-mode .text-slate-500, body.dark-mode .text-slate-400 { color: #a9d0d5 !important; }
-        body.dark-mode #mc-questions-container label, body.dark-mode textarea, body.dark-mode input[type="number"] { background: rgba(10, 39, 49, .72) !important; border-color: rgba(115, 220, 221, .3) !important; color: #e4fbfb; }
-        body.dark-mode footer { background: rgba(12, 39, 49, .82) !important; color: #a9d0d5 !important; }
-        body.dark-mode .bg-white { background-color: #143541 !important; color: #e4fbfb; }
+        body.dark-mode #welcome-screen, body.dark-mode #results-screen, body.dark-mode #exam-form > div > div, body.dark-mode #mc-questions-container > div, body.dark-mode #open-questions-container > div {
+            background: rgba(20, 53, 65, .97) !important;
+            border-color: rgba(115, 220, 221, .3) !important;
+            color: #e7f2f5;
+        }
+        body.dark-mode #import-dialog > div, body.dark-mode #slideshow-dialog > div { background-color: #143541 !important; border-color: rgba(115, 220, 221, .3) !important; }
+        body.dark-mode footer { background: rgba(12, 39, 49, .94) !important; border-color: rgba(115, 220, 221, .22) !important; color: #bfd2d9 !important; }
+
+        /* Ensure Tailwind's light-theme text utilities remain readable on dark surfaces. */
+        body.dark-mode .text-slate-900, body.dark-mode .text-slate-800, body.dark-mode .text-slate-700 { color: #edf7f8 !important; }
+        body.dark-mode .text-slate-600, body.dark-mode .text-slate-500, body.dark-mode .text-slate-400 { color: #bfd2d9 !important; }
+        body.dark-mode .text-wrts-700, body.dark-mode .text-wrts-600, body.dark-mode .text-cyan-800 { color: #8de5ef !important; }
+        body.dark-mode .text-indigo-600 { color: #c4c8ff !important; }
+        body.dark-mode .text-emerald-600, body.dark-mode .text-emerald-700, body.dark-mode .text-emerald-800 { color: #8be2bd !important; }
+        body.dark-mode .text-rose-700, body.dark-mode .text-rose-800 { color: #ffabb7 !important; }
+        body.dark-mode .text-amber-700, body.dark-mode .text-amber-800, body.dark-mode .text-amber-900 { color: #f5d28a !important; }
+        body.dark-mode .text-white { color: #ffffff !important; }
+
+        /* Convert pale utility backgrounds used by cards, alerts, badges, and controls. */
+        body.dark-mode .bg-white, body.dark-mode .bg-slate-50, body.dark-mode .bg-slate-100, body.dark-mode .bg-slate-200,
+        body.dark-mode [class~="bg-cyan-50"], body.dark-mode [class~="bg-cyan-50/40"], body.dark-mode [class~="bg-cyan-50/70"], body.dark-mode .bg-cyan-100,
+        body.dark-mode .bg-amber-50, body.dark-mode .bg-emerald-50, body.dark-mode .bg-rose-50 {
+            background-color: #183f4d !important;
+        }
+        body.dark-mode .bg-wrts-50 { background-color: #164453 !important; }
+        body.dark-mode [class~="bg-white/60"], body.dark-mode [class~="bg-white/70"] { background-color: rgba(10, 35, 44, .7) !important; }
+        body.dark-mode .border-slate-200, body.dark-mode .border-slate-300, body.dark-mode .border-cyan-100,
+        body.dark-mode .border-cyan-200, body.dark-mode .border-amber-200, body.dark-mode .border-emerald-200,
+        body.dark-mode .border-rose-200, body.dark-mode .border-indigo-200 { border-color: rgba(132, 196, 207, .35) !important; }
+
+        body.dark-mode #mc-questions-container label { background: #123744 !important; border-color: rgba(115, 220, 221, .32) !important; color: #e7f2f5 !important; }
+        body.dark-mode #mc-questions-container label:hover { background: #194b59 !important; border-color: #52cdda !important; }
+        body.dark-mode textarea, body.dark-mode input[type="number"], body.dark-mode input:not([type]), body.dark-mode button.bg-white {
+            background-color: #102f3a !important;
+            border-color: rgba(132, 196, 207, .45) !important;
+            color: #edf7f8 !important;
+        }
+        body.dark-mode textarea::placeholder, body.dark-mode input::placeholder { color: #a9c2ca !important; opacity: 1; }
+        body.dark-mode input[type="radio"], body.dark-mode input[type="checkbox"] { accent-color: #42c7d6; }
+        body.dark-mode button:not(.bg-wrts-600):not(.bg-emerald-600) { color: #dff4f6; }
+        body.dark-mode button.border-rose-300 { border-color: rgba(255, 171, 183, .55) !important; color: #ffabb7 !important; }
+        body.dark-mode button.border-cyan-300 { border-color: rgba(115, 220, 221, .48) !important; }
+        body.dark-mode :focus-visible { outline: 2px solid #6be0e9; outline-offset: 2px; }
         @media (max-width: 640px) { header h1 { font-size: .9rem; } header p { font-size: .65rem; } main { padding: .8rem !important; } }
     </style>
 </head>
@@ -198,6 +238,10 @@
             </label>
             <label class="text-xs font-semibold text-slate-600">Open vragen
                 <input id="exam-open-count" type="number" min="0" max="100" value="0" onchange="updateExamSettings()" class="mt-1 block w-full rounded-lg border border-cyan-200 p-2 text-sm">
+            </label>
+            <label class="col-span-2 flex cursor-pointer items-start gap-2 rounded-lg border border-cyan-200 bg-white/70 p-3 text-xs font-semibold text-slate-700">
+                <input id="direct-feedback" type="checkbox" class="mt-0.5 rounded border-cyan-300 text-wrts-600 focus:ring-wrts-500">
+                <span>Controleer antwoorden direct tijdens de toets <span class="mt-1 block font-normal text-slate-500">Meerkeuze wordt meteen nagekeken. Open antwoorden kun je vergelijken met het modelantwoord.</span></span>
             </label>
             <p id="question-settings-summary" class="col-span-2 text-xs text-slate-500">Importeer eerst vragen om een toets samen te stellen.</p>
         </div>
@@ -368,6 +412,7 @@
     let timerInterval = null;
     let remainingSeconds = 90 * 60;
     let examSubmitted = false;
+    let directFeedbackEnabled = false;
     let examSettings = { duration: 90, mcCount: 0, openCount: 0 };
     let unanswerableQuestionCount = 0;
     const replacedMcQuestionIds = new Set();
@@ -492,7 +537,7 @@
         const optionsHtml = shuffle(q.options.map((text, originalIndex) => ({ text, originalIndex })))
             .map(({ text, originalIndex }) => `
                 <label class="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-wrts-50/50 hover:border-wrts-300 cursor-pointer transition">
-                    <input type="radio" name="mc_${q.id}" value="${originalIndex}" onchange="updateProgress()" class="mt-0.5 text-wrts-600 focus:ring-wrts-500">
+                    <input type="radio" name="mc_${q.id}" value="${originalIndex}" onchange="handleMcAnswer(${q.id}, this)" class="mt-0.5 text-wrts-600 focus:ring-wrts-500">
                     <span class="text-slate-700 text-sm md:text-base">${text}</span>
                 </label>`).join('');
         return `
@@ -503,6 +548,7 @@
                 </div>
                 <p class="font-semibold text-slate-900 text-sm md:text-base">${q.text}</p>
                 <div class="space-y-2 pt-2">${optionsHtml}</div>
+                ${directFeedbackEnabled ? `<p id="mc-feedback-${q.id}" class="hidden rounded-lg border px-3 py-2 text-sm font-semibold" role="status" aria-live="polite"></p>` : ''}
                 ${renderReplacementControl('mc', index)}
             </div>`;
     }
@@ -524,7 +570,7 @@
                 </div>
                 <div>
                     <button type="button" onclick="toggleModelAnswer(${q.id})" class="text-xs font-semibold text-wrts-600 hover:text-wrts-700 bg-wrts-50 px-3 py-1.5 rounded-lg border border-wrts-100 transition inline-flex items-center space-x-1">
-                        <span>Toon / Verberg Modelantwoord</span>
+                        <span>${directFeedbackEnabled ? 'Vergelijk met modelantwoord' : 'Toon / Verberg Modelantwoord'}</span>
                     </button>
                     <div id="model_${q.id}" class="hidden mt-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs md:text-sm text-amber-900 space-y-1.5">
                         <p class="font-bold">Modelantwoord & Nakijkinstructie:</p>
@@ -924,6 +970,7 @@
             toggleImportDialog();
             return;
         }
+        directFeedbackEnabled = document.getElementById('direct-feedback').checked;
         document.getElementById('welcome-screen').classList.add('hidden');
         document.getElementById('exam-form').classList.remove('hidden');
         document.getElementById('header-progress').classList.remove('hidden');
@@ -931,6 +978,23 @@
         initExam();
         updateProgress();
         startExamTimer();
+    }
+
+    function handleMcAnswer(questionId, input) {
+        updateProgress();
+        if (!directFeedbackEnabled) return;
+
+        const question = activeMcQuestions.find(item => item.id === questionId);
+        const feedback = document.getElementById(`mc-feedback-${questionId}`);
+        if (!question || !feedback) return;
+
+        const isCorrect = Number.parseInt(input.value, 10) === question.answer;
+        feedback.className = isCorrect
+            ? 'rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800'
+            : 'rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800';
+        feedback.textContent = isCorrect
+            ? 'Goed! Dit is het juiste antwoord.'
+            : `Niet helemaal. Het juiste antwoord is: ${question.options[question.answer]}`;
     }
 
     function startExamTimer() {
