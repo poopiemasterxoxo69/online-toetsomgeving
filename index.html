@@ -921,8 +921,9 @@
     function extractChapter(text) {
         const chapterPattern = /#([^#]+)#/i;
         const match = text.match(chapterPattern);
+        const chapter = match ? match[1].trim().replace(/^hoofdstuk\s*/i, '').trim() : '';
         return {
-            chapter: match ? match[1].trim().toLocaleLowerCase('nl-NL') : 'Onbekend',
+            chapter: chapter ? chapter.toLocaleLowerCase('nl-NL') : 'Onbekend',
             text: text.replace(/#[^#]+#/g, '').replace(/\s+/g, ' ').trim()
         };
     }
