@@ -1343,8 +1343,14 @@
                 document.getElementById('edit-question-status').textContent = 'Vul titel, modelantwoord en een geldig puntenmaximum in.';
                 return;
             }
+            const oldPointsSuffix = /\(\s*(\d+(?:[.,]\d+)?)\s*punten?\s*\)$/i;
+            const titleWithUpdatedPoints = title.replace(oldPointsSuffix, (suffix, pointsLabel) =>
+                Number.parseFloat(pointsLabel.replace(',', '.')) === Number(question.maxPoints)
+                    ? `(${maxPoints} punten)`
+                    : suffix
+            );
             question.text = updatedText;
-            question.title = title;
+            question.title = titleWithUpdatedPoints;
             question.modelAnswer = modelAnswer;
             question.maxPoints = maxPoints;
         }
