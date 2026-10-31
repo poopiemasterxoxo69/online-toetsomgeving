@@ -237,10 +237,23 @@
                 <h2 id="slideshow-title" class="mt-1 text-2xl font-black text-slate-800">Mijn vragen</h2>
                 <p id="slideshow-counter" class="mt-1 text-sm text-slate-500">0 / 0</p>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <button id="export-questions-button" type="button" onclick="exportAllImportedQuestions()" class="rounded-xl border border-cyan-300 bg-white px-4 py-2.5 text-sm font-bold text-wrts-700 hover:bg-cyan-50">Exporteer alle vragen (.json)</button>
-                <button id="copy-questions-button" type="button" onclick="copyAllImportedQuestions()" class="rounded-xl bg-wrts-600 px-4 py-2.5 text-sm font-bold text-white">Kopieer alle vragen</button>
-                <button type="button" onclick="closeQuestionSlideshow()" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-lg font-bold text-slate-500 hover:bg-slate-50" aria-label="Vragen sluiten">&times;</button>
+            <div class="flex flex-col items-end gap-2">
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                    <button id="export-questions-button" type="button" onclick="exportAllImportedQuestions()" class="rounded-xl border border-cyan-300 bg-white px-4 py-2.5 text-sm font-bold text-wrts-700 hover:bg-cyan-50">Exporteer alle vragen (.json)</button>
+                    <button id="copy-questions-button" type="button" onclick="copyAllImportedQuestions()" class="rounded-xl bg-wrts-600 px-4 py-2.5 text-sm font-bold text-white">Kopieer alle vragen</button>
+                    <button type="button" onclick="closeQuestionSlideshow()" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-lg font-bold text-slate-500 hover:bg-slate-50" aria-label="Vragen sluiten">&times;</button>
+                </div>
+                <fieldset class="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 rounded-xl border border-cyan-200 bg-cyan-50/70 px-3 py-2">
+                    <legend class="px-1 text-[11px] font-bold uppercase tracking-wider text-slate-600">Vragen tonen</legend>
+                    <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
+                        <input id="library-filter-mc" type="checkbox" checked onchange="toggleLibraryQuestionType('mc', this.checked)" class="rounded border-cyan-300 text-wrts-600 focus:ring-wrts-500">
+                        Meerkeuze <span id="library-filter-mc-count" class="text-slate-500"></span>
+                    </label>
+                    <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
+                        <input id="library-filter-open" type="checkbox" checked onchange="toggleLibraryQuestionType('open', this.checked)" class="rounded border-cyan-300 text-wrts-600 focus:ring-wrts-500">
+                        Open <span id="library-filter-open-count" class="text-slate-500"></span>
+                    </label>
+                </fieldset>
             </div>
         </div>
         <div id="library-body">
@@ -845,16 +858,35 @@
     let slideshowIndex = 0;
     let editingImportedQuestion = false;
     let selectedLibraryChapter = null;
+    const selectedLibraryQuestionTypes = new Set(['mc', 'open']);
+
+    function getSelectedLibraryTypeLabel() {
+        if (selectedLibraryQuestionTypes.size === 1) return selectedLibraryQuestionTypes.has('mc') ? 'meerkeuzevragen' : 'open vragen';
+        return 'vragen';
+    }
 
     function getLibraryQuestionsForSelectedChapter() {
         const allQuestions = [...importedMcQuestions, ...importedOpenQuestions];
-        return selectedLibraryChapter === null
-            ? allQuestions
-            : allQuestions.filter(question => (question.chapter || 'Onbekend') === selectedLibraryChapter);
+        return allQuestions.filter(question => {
+            const matchesChapter = selectedLibraryChapter === null || (question.chapter || 'Onbekend') === selectedLibraryChapter;
+            const matchesType = question.options ? selectedLibraryQuestionTypes.has('mc') : selectedLibraryQuestionTypes.has('open');
+            return matchesChapter && matchesType;
+        });
     }
 
     function selectLibraryChapter(chapter) {
         selectedLibraryChapter = chapter;
+        slideshowQuestions = getLibraryQuestionsForSelectedChapter();
+        slideshowIndex = 0;
+        editingImportedQuestion = false;
+        document.getElementById('copy-questions-status').textContent = '';
+        renderSlideshowQuestion();
+    }
+
+    function toggleLibraryQuestionType(type, isChecked) {
+        if (!['mc', 'open'].includes(type)) return;
+        if (isChecked) selectedLibraryQuestionTypes.add(type);
+        else selectedLibraryQuestionTypes.delete(type);
         slideshowQuestions = getLibraryQuestionsForSelectedChapter();
         slideshowIndex = 0;
         editingImportedQuestion = false;
@@ -870,7 +902,18 @@
         document.getElementById('library-open-count').textContent = importedOpenQuestions.length;
         const copyButton = document.getElementById('copy-questions-button');
         copyButton.disabled = questionsToCopy.length === 0;
-        copyButton.textContent = selectedLibraryChapter === null ? 'Kopieer alle vragen' : 'Kopieer vragen van dit hoofdstuk';
+        const typeLabel = getSelectedLibraryTypeLabel();
+        copyButton.textContent = selectedLibraryChapter === null
+            ? `Kopieer alle ${typeLabel}`
+            : `Kopieer ${typeLabel} van dit hoofdstuk`;
+
+        const questionsInChapter = selectedLibraryChapter === null
+            ? questions
+            : questions.filter(question => (question.chapter || 'Onbekend') === selectedLibraryChapter);
+        document.getElementById('library-filter-mc').checked = selectedLibraryQuestionTypes.has('mc');
+        document.getElementById('library-filter-open').checked = selectedLibraryQuestionTypes.has('open');
+        document.getElementById('library-filter-mc-count').textContent = `(${questionsInChapter.filter(question => question.options).length})`;
+        document.getElementById('library-filter-open-count').textContent = `(${questionsInChapter.filter(question => !question.options).length})`;
 
         const chapters = new Map();
         questions.forEach(question => {
@@ -1248,9 +1291,14 @@
         const content = questionsToCopy.map(formatQuestionForImport).join('\n\n');
         const status = document.getElementById('copy-questions-status');
         if (!content) {
+            if (selectedLibraryQuestionTypes.size === 0) {
+                status.textContent = 'Vink hierboven minstens één vraagtype aan om vragen te kopiëren.';
+                return;
+            }
+            const typeLabel = getSelectedLibraryTypeLabel();
             status.textContent = selectedLibraryChapter === null
-                ? 'Er zijn nog geen vragen om te kopiëren.'
-                : 'In dit hoofdstuk zijn nog geen vragen om te kopiëren.';
+                ? `Er zijn geen ${typeLabel} om te kopiëren.`
+                : `In dit hoofdstuk zijn geen ${typeLabel} om te kopiëren.`;
             return;
         }
 
@@ -1280,6 +1328,8 @@
 
     function openQuestionSlideshow() {
         selectedLibraryChapter = null;
+        selectedLibraryQuestionTypes.add('mc');
+        selectedLibraryQuestionTypes.add('open');
         slideshowQuestions = getLibraryQuestionsForSelectedChapter();
         slideshowIndex = 0;
         editingImportedQuestion = false;
@@ -1388,7 +1438,13 @@
             document.getElementById('edit-question-button').classList.add('hidden');
             document.getElementById('delete-question-button').classList.add('hidden');
             counter.textContent = '0 / 0';
-            content.innerHTML = '<div class="flex h-full min-h-48 flex-col items-center justify-center text-center"><span class="text-4xl" aria-hidden="true">✦</span><p class="mt-3 text-lg font-bold text-slate-800">Je vraagbibliotheek is nog leeg</p><p class="mt-1 text-sm text-slate-500">Importeer vragen via ‘Vragen beheren’ om ze hier terug te zien.</p></div>';
+            const emptyTitle = importedMcQuestions.length + importedOpenQuestions.length === 0 ? 'Je vraagbibliotheek is nog leeg' : 'Geen vragen gevonden';
+            const emptyDescription = importedMcQuestions.length + importedOpenQuestions.length === 0
+                ? 'Importeer vragen via ‘Vragen beheren’ om ze hier terug te zien.'
+                : selectedLibraryQuestionTypes.size === 0
+                    ? 'Vink bovenaan minstens één vraagtype aan om vragen te tonen.'
+                    : `Er zijn geen ${getSelectedLibraryTypeLabel()} voor deze selectie. Kies een ander hoofdstuk of vraagtype.`;
+            content.innerHTML = `<div class="flex h-full min-h-48 flex-col items-center justify-center text-center"><span class="text-4xl" aria-hidden="true">✦</span><p class="mt-3 text-lg font-bold text-slate-800">${emptyTitle}</p><p class="mt-1 text-sm text-slate-500">${emptyDescription}</p></div>`;
             return;
         }
 
